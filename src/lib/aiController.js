@@ -24,8 +24,8 @@ function getAiConfig() {
   const cfg = config?.ai || {};
   return {
     provider: "groq",
-    apiKey: process.env.GROQ_API_KEY || cfg.apiKey || "",
-    model: process.env.GROQ_MODEL || cfg.model || "openai/gpt-oss-20b"
+    apiKey: cfg.apiKey || "",
+    model: cfg.model || "openai/gpt-oss-20b"
   };
 }
 

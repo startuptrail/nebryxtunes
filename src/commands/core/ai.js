@@ -103,8 +103,8 @@ function getAiConfig() {
   const cfg = config?.ai || {};
   return {
     provider: "groq",
-    apiKey: String(process.env.GROQ_API_KEY || cfg.apiKey || "").trim(),
-    model: String(process.env.GROQ_MODEL || cfg.model || "openai/gpt-oss-20b").trim()
+    apiKey: String(cfg.apiKey || "").trim(),
+    model: String(cfg.model || "openai/gpt-oss-20b").trim()
   };
 }
 
