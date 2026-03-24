@@ -1,5 +1,5 @@
 const config = require("../../config");
-const { runXaiChat } = require("../services/openaiClient");
+const { runGroqChat } = require("../services/openaiClient");
 
 const ALLOWED_ACTIONS = new Set([
   "ban",
@@ -23,9 +23,9 @@ const ALLOWED_ACTIONS = new Set([
 function getAiConfig() {
   const cfg = config?.ai || {};
   return {
-    provider: "gemini",
-    apiKey: process.env.GEMINI_API_KEY || cfg.apiKey || "",
-    model: process.env.GEMINI_MODEL || cfg.model || "gemini-2.0-flash"
+    provider: "groq",
+    apiKey: process.env.GROQ_API_KEY || cfg.apiKey || "",
+    model: process.env.GROQ_MODEL || cfg.model || "openai/gpt-oss-20b"
   };
 }
 
@@ -89,15 +89,13 @@ function normalizePayload(payload) {
 
 async function requestModerationPayload(input, context) {
   const { apiKey, model } = getAiConfig();
-  if (!apiKey) return { ok: false, error: "🤖 [AI] API key missing. Set GEMINI_API_KEY." };
+  if (!apiKey) return { ok: false, error: "🤖 [AI] API key missing. Set GROQ_API_KEY." };
   const prompt = buildPrompt(input, context);
   try {
-    const raw = await runXaiChat({
+    const raw = await runGroqChat({
       apiKey,
       model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
-      maxTokens: 350
+      messages: [{ role: "user", content: prompt }]
     });
     const cleaned = cleanJson(raw);
     const parsed = JSON.parse(String(cleaned || "").trim());

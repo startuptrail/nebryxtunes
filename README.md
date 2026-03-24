@@ -1,4 +1,4 @@
-# SpareMusic Bot
+# NebryxTunes Bot
 
 Full Discord Music++ bot: **prefix** (`!play`), **slash** (`/play`), **mention** (`@Bot play`) — all call the same core logic.
 
@@ -30,13 +30,13 @@ No logic outside core. No duplicate logic.
 
 Replace placeholders before running.
 
-### AI (Bytez) quick setup
+### AI (Groq) quick setup
 
 Set environment variables:
 
-- `AI_PROVIDER=bytez`
-- `BYTEZ_API_KEY=your_key` (or `BYTEX_API_KEY`)
-- `BYTEZ_MODEL=openai/gpt-4o-mini` (optional)
+- `AI_PROVIDER=groq`
+- `GROQ_API_KEY=your_key`
+- `GROQ_MODEL=openai/gpt-oss-20b` (optional)
 
 Then use: `ai <your message>`
 

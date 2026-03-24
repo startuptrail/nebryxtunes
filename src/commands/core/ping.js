@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
+const { getPoweredByText } = require("../../lib/branding");
 function formatUptime(ms) {
   const s = Math.floor(ms / 1000) % 60;
   const m = Math.floor(ms / 60000) % 60;
@@ -94,7 +95,7 @@ module.exports = {
         },
         {
           name: "🌐  Powered By",
-          value: `> 🚀 **Spare Music** — Powered by **SpareCloud**\n> All rights reserved.`,
+          value: getPoweredByText(),
           inline: false
         }
       )

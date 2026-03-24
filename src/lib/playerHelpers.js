@@ -1,5 +1,6 @@
 const config = require("../../config");
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { getNowPlayingFooter } = require("./branding");
 
 function getPrefix(client, guildId) {
   return (client.guildPrefixes && client.guildPrefixes.get(guildId)) || config.prefix;
@@ -130,7 +131,7 @@ function buildNowPlayingPayload(client, player) {
       { name: "🔁 Loop", value: loopText, inline: true },
       { name: "🔊 Volume", value: `${volume}%`, inline: true }
     ],
-    footer: { text: "Spare Music • Now Playing • Developed By Pranav", icon_url: avatar || undefined },
+    footer: { text: getNowPlayingFooter(), icon_url: avatar || undefined },
     timestamp: new Date().toISOString()
   };
 

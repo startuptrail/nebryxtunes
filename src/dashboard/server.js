@@ -5,6 +5,7 @@
 const http = require("http");
 const fs   = require("fs");
 const path = require("path");
+const { getBotName, getBotNameUpper } = require("../lib/branding");
 
 // Path to the index.html sitting in the project root
 const INDEX_HTML = path.join(__dirname, "../../index.html");
@@ -27,12 +28,17 @@ function sendHtml(res, status, filePath) {
       res.end("Internal Server Error: could not read index.html");
       return;
     }
+    const html = String(data)
+      .replace(/__BOT_NAME__/g, getBotName())
+      .replace(/__BOT_NAME_UPPER__/g, getBotNameUpper())
+      .replace(/NEBRYXTUNES/g, getBotNameUpper())
+      .replace(/NebryxTunes/g, getBotName());
     res.writeHead(status, {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Length": data.length,
+      "Content-Length": Buffer.byteLength(html),
       "Cache-Control": "no-cache"          // force browser to always re-fetch
     });
-    res.end(data);
+    res.end(html);
   });
 }
 

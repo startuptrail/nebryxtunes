@@ -1,5 +1,3 @@
-const { AttachmentBuilder } = require("discord.js");
-const { generateImageXai } = require("../../services/xaiMediaService");
 const Guild = require("../../database/models/Guild");
 const { analyzeSecurityRisk, logSecurityEvent } = require("../../lib/securityMonitor");
 
@@ -24,16 +22,7 @@ async function run(client, context) {
     if (block) return context.reply("Blocked by AI safety policy for this server.");
   }
 
-  try {
-    await context.reply("🖼️ Generating image, please wait...");
-    const media = await generateImageXai({ prompt });
-    const filename = `ai-image-${Date.now()}.${media.extension || "png"}`;
-    const file = new AttachmentBuilder(media.buffer, { name: filename });
-    return context.reply({ content: `✅ **Generated Image**\n📝 Prompt: ${prompt}\n🤖 Provider: HuggingFace | Model: \`${media.model}\``, files: [file] });
-  } catch (error) {
-    const msg = String(error?.message || "Image generation failed.").slice(0, 1500);
-    return context.reply(`❌ Image generation failed.\n**Reason:** ${msg}\n**Tip:** Get a free HuggingFace API key at https://huggingface.co/settings/tokens and set \`HF_API_KEY\` in config.js`);
-  }
+  return context.reply("Image generation is disabled in this Groq text-only build.");
 }
 
 module.exports = { run };

@@ -1,6 +1,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const config = require("../../../config");
 const { getPrefix } = require("../../lib/playerHelpers");
+const { getBotName } = require("../../lib/branding");
 
 function formatUptime(ms) {
   const s = Math.floor(ms / 1000) % 60;
@@ -111,8 +112,9 @@ function buildOverview(client, prefix, commands) {
   const guildCount = client.guilds?.cache?.size ?? 0;
   const ms = client.startedAt ? Date.now() - client.startedAt : 0;
   const uptimeStr = formatUptime(ms);
+  const botName = getBotName();
   return {
-    title: "Spare Music Command Suite",
+    title: `${botName} Command Suite`,
     color: 0x5865f2,
     thumbnail: client.user?.displayAvatarURL?.({ size: 128, extension: "png" }) ? { url: client.user.displayAvatarURL({ size: 128, extension: "png" }) } : undefined,
     fields: [

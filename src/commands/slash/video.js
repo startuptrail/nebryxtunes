@@ -3,7 +3,7 @@ const core = require("../core/video");
 
 const data = new SlashCommandBuilder()
   .setName("video")
-  .setDescription("Generate an AI video using Grok")
+  .setDescription("Video generation command")
   .addStringOption(option =>
     option
       .setName("prompt")

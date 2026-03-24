@@ -3,7 +3,7 @@ const core = require("../core/image");
 
 const data = new SlashCommandBuilder()
   .setName("image")
-  .setDescription("Generate an AI image using Grok")
+  .setDescription("Image generation command")
   .addStringOption(option =>
     option
       .setName("prompt")

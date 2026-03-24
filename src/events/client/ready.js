@@ -31,11 +31,10 @@ module.exports = {
     if (client.startPresenceRotation) client.startPresenceRotation();
     client.riffy.init(client.user.id);
 
-    const aiModel = String(config.ai?.model || "gemini-2.0-flash");
-    const imageModel = String(config.ai?.hfImageModel || "black-forest-labs/FLUX.1-schnell");
-    const videoModel = String(config.ai?.hfVideoModel || "genmo/mochi-1-preview");
-    const hasKey = !!String(config.ai?.apiKey || "").trim() && !String(config.ai?.apiKey || "").includes("PASTE_");
-    console.log(`[AI] provider=gemini model=${aiModel} image=${imageModel} video=${videoModel} key=${hasKey ? "set" : "missing"}`);
+    const aiModel = String(process.env.GROQ_MODEL || config.ai?.model || "openai/gpt-oss-20b");
+    const aiKey = String(process.env.GROQ_API_KEY || config.ai?.apiKey || "").trim();
+    const hasKey = !!aiKey && !/^(?:PASTE_|your[-_ ]?groq|your_key)/i.test(aiKey);
+    console.log(`[AI] provider=groq model=${aiModel} key=${hasKey ? "set" : "missing"}`);
 
     const docs = await Guild.find({
       twentyFourSeven: true,

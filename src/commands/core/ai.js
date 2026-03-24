@@ -3,7 +3,7 @@ const config = require("../../../config");
 const Guild = require("../../database/models/Guild");
 const Warning = require("../../database/models/Warning");
 const { parseAiPayload } = require("../../lib/safeJson");
-const { runXaiChat } = require("../../services/openaiClient");
+const { runGroqChat } = require("../../services/openaiClient");
 const { lookupWeb } = require("../../services/webLookupService");
 const corePlay = require("./play");
 const coreSearch = require("./search");
@@ -102,9 +102,9 @@ const MUSIC_HINT_RE = /\b(song|music|track|album|artist|youtube|yt|listen|play)\
 function getAiConfig() {
   const cfg = config?.ai || {};
   return {
-    provider: "gemini",
-    apiKey: String(cfg.apiKey || "").trim(),
-    model: cfg.model || "gemini-2.0-flash"
+    provider: "groq",
+    apiKey: String(process.env.GROQ_API_KEY || cfg.apiKey || "").trim(),
+    model: String(process.env.GROQ_MODEL || cfg.model || "openai/gpt-oss-20b").trim()
   };
 }
 
@@ -526,17 +526,15 @@ function normalizeInputMessages(input) {
   return [{ role: "user", content: String(input || "") }];
 }
 
-async function callGrok(input, apiKey, model) {
+async function callGroq(input, apiKey, model) {
   const messages = normalizeInputMessages(input);
   const isChat = Array.isArray(input);
-  const candidate = String(model || "").trim() || "grok-3-mini";
+  const candidate = String(model || "").trim() || "openai/gpt-oss-20b";
   console.log(`🤖 [AI] request start model=${candidate} mode=${isChat ? "chat" : "router"}`);
-  return runXaiChat({
+  return runGroqChat({
     apiKey,
     model: candidate,
-    messages,
-    temperature: isChat ? 0.55 : 0.15,
-    maxTokens: isChat ? 600 : 350
+    messages
   });
 }
 
@@ -546,7 +544,7 @@ async function callAI(input) {
     return { ok: false, error: "AI API key missing in config.js." };
   }
   try {
-    const text = await callGrok(input, apiKey, model);
+    const text = await callGroq(input, apiKey, model);
     console.log(`✅ [AI] request ok chars=${String(text || "").length}`);
     return { ok: true, text };
   } catch (error) {

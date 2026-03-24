@@ -1,14 +1,14 @@
 module.exports = {
-  token: process.env.DISCORD_TOKEN || "",
+  branding: {
+    botName: process.env.BOT_NAME || "NebryxTunes"
+  },
+  token: process.env.DISCORD_TOKEN || "MTQ0NTY4Nzk5MjAzODU5MjU3Mw.GD1jCy.AixmdEy67S8ANoCsGF58aP6-hUHZLF1_niOyA0",
   prefix: process.env.BOT_PREFIX || "!",
-  mongoUri: process.env.MONGO_URI || process.env.MONGODB_URI || "",
+  mongoUri: process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb+srv://pranav:pranavffgame@music-bot.ovgmt.mongodb.net/?retryWrites=true&w=majority",
   ai: {
-    provider: "gemini",
-    apiKey: process.env.GEMINI_API_KEY || "",
-    model: "gemini-2.0-flash",
-    hfApiKey: process.env.HF_API_KEY || "your-huggingface-api-key-here",
-    hfImageModel: "black-forest-labs/FLUX.1-schnell",
-    hfVideoModel: "genmo/mochi-1-preview"
+    provider: "groq",
+    apiKey: process.env.GROQ_API_KEY || "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",
+    model: process.env.GROQ_MODEL || "openai/gpt-oss-20b"
   },
   supportUrl: process.env.SUPPORT_URL || "https://discord.sparecloud.in",
   dashboard: {

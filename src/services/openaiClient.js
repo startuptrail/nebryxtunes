@@ -1,74 +1,61 @@
-function createTimeoutSignal(timeoutMs) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return { signal: controller.signal, clear: () => clearTimeout(timer) };
-}
+const GroqImport = require("groq-sdk");
+
+const Groq = GroqImport?.default || GroqImport;
 
 function validateApiKey(apiKey) {
   const trimmedKey = String(apiKey || "").trim();
-  if (!trimmedKey) throw new Error("Gemini API key is missing in config.js.");
-  if (/^PASTE_/i.test(trimmedKey)) throw new Error("Gemini API key is still a placeholder in config.js.");
+  if (!trimmedKey) throw new Error("Groq API key is missing in config.js.");
+  if (/^(?:PASTE_|your[-_ ]?groq|your_key)/i.test(trimmedKey)) {
+    throw new Error("Groq API key is still a placeholder in config.js.");
+  }
   return trimmedKey;
 }
 
 function normalizeMessages(messages) {
-  return messages.map((message) => {
-    const role = String(message?.role || "user").toLowerCase() === "assistant" ? "model" : "user";
-    return {
-      role,
-      parts: [{ text: String(message?.content || "") }]
-    };
-  });
+  return messages.map((message) => ({
+    role: String(message?.role || "user").toLowerCase(),
+    content: String(message?.content || "")
+  }));
 }
 
-async function runXaiChat({ apiKey, model = "gemini-2.0-flash", messages, temperature = 0.3, maxTokens = 400, timeoutMs = 20000 }) {
+function extractText(value) {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    return value.map(item => extractText(item)).filter(Boolean).join("\n").trim();
+  }
+  if (!value || typeof value !== "object") return "";
+  if (typeof value.output_text === "string") return value.output_text.trim();
+  if (typeof value.text === "string") return value.text.trim();
+  if (typeof value.content === "string") return value.content.trim();
+  if (typeof value.message === "string") return value.message.trim();
+  if (Array.isArray(value.content)) return extractText(value.content);
+  if (Array.isArray(value.messages)) return extractText(value.messages);
+  if (Array.isArray(value.choices)) {
+    return extractText(value.choices.map(choice => choice?.message?.content || choice?.text || ""));
+  }
+  return "";
+}
+
+async function runGroqChat({ apiKey, model = "openai/gpt-oss-20b", messages }) {
   const trimmedKey = validateApiKey(apiKey);
   if (!Array.isArray(messages) || !messages.length) throw new Error("messages must be a non-empty array.");
 
-  console.log(`[AI] Gemini request model=${model} messages=${messages.length}`);
-  const timeout = createTimeoutSignal(timeoutMs);
+  console.log(`[AI] Groq request model=${model} messages=${messages.length}`);
+  const client = new Groq({
+    apiKey: trimmedKey,
+    timeout: 20 * 1000,
+    maxRetries: 1
+  });
+  const completion = await client.chat.completions.create({
+    model,
+    messages: normalizeMessages(messages)
+  });
 
-  let payload;
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(trimmedKey)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: normalizeMessages(messages),
-          generationConfig: {
-            temperature,
-            maxOutputTokens: maxTokens
-          }
-        }),
-        signal: timeout.signal
-      }
-    );
-    payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      const message =
-        payload?.error?.message ||
-        payload?.message ||
-        `Gemini request failed with status ${response.status}.`;
-      throw new Error(String(message));
-    }
-  } catch (error) {
-    if (error?.name === "AbortError") throw new Error("Gemini request timed out.");
-    throw error;
-  } finally {
-    timeout.clear();
-  }
+  const result = extractText(completion?.choices?.[0]?.message?.content);
+  if (!result) throw new Error("Groq returned an empty response.");
 
-  const result = String(
-    payload?.candidates?.[0]?.content?.parts?.map((part) => part?.text || "").join("") || ""
-  ).trim();
-  if (!result) throw new Error("Gemini returned an empty response.");
-
-  console.log(`[AI] Gemini response chars=${result.length}`);
+  console.log(`[AI] Groq response chars=${result.length}`);
   return result;
 }
 
-module.exports = { runXaiChat };
+module.exports = { runGroqChat };

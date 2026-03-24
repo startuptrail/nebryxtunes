@@ -8,23 +8,25 @@ const { sendNowPlayingMessage, clearNowPlayingMessage } = require("./src/lib/pla
 const Guild = require("./src/database/models/Guild");
 const { startDashboardServer } = require("./src/dashboard/server");
 const { apply247StateToPlayer, normalize247Mode } = require("./src/lib/twentyFourSeven");
+const { getBotName } = require("./src/lib/branding");
 
 function patchRiffyPlayerEvents() {
   if (!Player || typeof Player.prototype?.handleEvent !== "function") return;
-  if (Player.prototype.__sparemusicPatchedHandleEvent) return;
+  if (Player.prototype.__botPatchedHandleEvent) return;
 
   const originalHandleEvent = Player.prototype.handleEvent;
   const ignoredEvents = new Set([
     "PlayerCreatedEvent",
     "PlayerConnectedEvent",
-    "VolumeChangedEvent"
+    "VolumeChangedEvent",
+    "FiltersChangedEvent"
   ]);
 
   Player.prototype.handleEvent = async function patchedHandleEvent(payload) {
     if (ignoredEvents.has(payload?.type)) return;
     return originalHandleEvent.call(this, payload);
   };
-  Player.prototype.__sparemusicPatchedHandleEvent = true;
+  Player.prototype.__botPatchedHandleEvent = true;
 }
 
 patchRiffyPlayerEvents();
@@ -334,10 +336,11 @@ async function enterIdleState(player, delayMs = 500, trigger = "manual") {
 
 function printBanner() {
   const version = pkg.version || "1";
+  const botName = getBotName();
   console.log([
     "╔════════════════════════════════════════════╗",
     "║                                            ║",
-    "    🚀 NebryxTunes Bot",
+    `    🚀 ${botName} Bot`,
     `    📦 Version : ${version}`,
     "    ✅ Status  : Active",
     "║                                            ║",
