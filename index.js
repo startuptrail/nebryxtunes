@@ -370,7 +370,7 @@ async function init() {
   require("./src/handlers/commandHandler")(client);
   console.log("✅ [SYSTEM] Handlers Loaded");
 
-  client.once("ready", () => {
+  client.once("clientReady", () => {
     console.log("🟢 [DISCORD] Ready");
     console.log(`🤖 [DISCORD] User ${client.user?.tag || "Unknown"}`);
     console.log(`🆔 [DISCORD] ID ${client.user?.id || "Unknown"}`);
@@ -395,7 +395,7 @@ async function init() {
   const readyTimeout = setTimeout(() => {
     console.error("[DISCORD] Ready event did not fire within 30s after login start.");
   }, 30 * 1000);
-  client.once("ready", () => clearTimeout(readyTimeout));
+  client.once("clientReady", () => clearTimeout(readyTimeout));
 
   console.log("[DISCORD] Starting login...");
   try {
