@@ -64,7 +64,7 @@ function formatDuration(ms) {
   ].filter(Boolean).join(" ");
 }
 
-function getBotSnapshot(client) {
+function getBotSnapshot(client, listenPort) {
   const wsStatus = client.ws?.status ?? -1;
   const servers = client.guilds?.cache?.size ?? 0;
   const ping = client.ws?.ping ?? -1;
@@ -87,6 +87,7 @@ function getBotSnapshot(client) {
     uptimeMs,
     activityType: activity?.type ?? null,
     activityName,
+    listenPort: Number(listenPort || process.env.PORT || process.env.DASHBOARD_PORT || 0) || null,
     updatedAt: new Date().toISOString(),
     botName: getBotName()
   };
@@ -115,6 +116,7 @@ function renderHealthPage(snapshot) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="10">
   <title>${escapeHtml(snapshot.botName)} Health</title>
   <style>
     :root {
@@ -229,6 +231,7 @@ function renderHealthPage(snapshot) {
     }
     .span-4 { grid-column: span 4; }
     .span-6 { grid-column: span 6; }
+    .span-12 { grid-column: span 12; }
     .label {
       color: var(--muted);
       text-transform: uppercase;
@@ -274,7 +277,7 @@ function renderHealthPage(snapshot) {
       50% { opacity: 0; }
     }
     @media (max-width: 840px) {
-      .span-4, .span-6 { grid-column: span 12; }
+      .span-4, .span-6, .span-12 { grid-column: span 12; }
       .wrap { width: min(100% - 16px, 1100px); }
       .hero { padding: 22px; }
     }
@@ -310,6 +313,12 @@ function renderHealthPage(snapshot) {
         <div class="small">Current Discord WebSocket latency from the active client session.</div>
       </section>
 
+      <section class="card span-4">
+        <div class="label">Web Port</div>
+        <div class="value">${escapeHtml(String(snapshot.listenPort || "auto"))}</div>
+        <div class="small">The HTTP port Render should detect for the live web service.</div>
+      </section>
+
       <section class="card span-6">
         <div class="label">Deployment Trace</div>
         <div class="terminal">$ bot.status
@@ -317,6 +326,7 @@ STATUS............. ${escapeHtml(statusLabel)}
 GATEWAY............ ${snapshot.gatewayReady ? "READY" : "NOT_READY"}
 SERVERS............ ${escapeHtml(String(snapshot.servers))}
 ACTIVITY........... ${escapeHtml(snapshot.activityName)}
+WEB_PORT........... ${escapeHtml(String(snapshot.listenPort || "auto"))}
 UPDATED_AT......... ${escapeHtml(snapshot.updatedAt)}<span class="cursor"></span></div>
       </section>
       <section class="card span-6">
@@ -328,9 +338,17 @@ PING_MS............ ${escapeHtml(String(snapshot.ping))}
 UPTIME_MS.......... ${escapeHtml(String(snapshot.uptimeMs))}
 HEALTH_ENDPOINT.... /health</div>
       </section>
+
+      <section class="card span-12">
+        <div class="label">Auto Refresh</div>
+        <div class="terminal">This page refreshes itself every 10 seconds so uptime monitors and browser tabs stay in sync.<span class="cursor"></span></div>
+      </section>
     </div>
 
     <div class="footer">MIT licensed NebryxTunes status surface</div>
+    <script>
+      setTimeout(() => location.reload(), 10000);
+    </script>
   </main>
 </body>
 </html>`;
@@ -349,7 +367,7 @@ async function startDashboardServer(client) {
     }
 
     if (req.method === "GET" && url.pathname === "/health") {
-      const snapshot = getBotSnapshot(client);
+      const snapshot = getBotSnapshot(client, port);
       const html = renderHealthPage(snapshot);
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
@@ -361,7 +379,7 @@ async function startDashboardServer(client) {
 
     if (req.method === "GET" && url.pathname === "/api/bot") {
       try {
-        return sendJson(res, 200, getBotSnapshot(client));
+        return sendJson(res, 200, getBotSnapshot(client, port));
       } catch (err) {
         return sendJson(res, 500, { ok: false, error: String(err.message) });
       }
@@ -383,6 +401,7 @@ async function startDashboardServer(client) {
   console.log(`[WEB] Server listening → http://${host}:${port}`);
   console.log(`[WEB] Landing page  → http://${host}:${port}/`);
   console.log(`[WEB] Bot API       → http://${host}:${port}/api/bot`);
+  console.log(`[WEB] Health page   → http://${host}:${port}/health`);
   return server;
 }
 
