@@ -5,6 +5,7 @@ const Warning = require("../../database/models/Warning");
 const { parseAiPayload } = require("../../lib/safeJson");
 const { runGroqChat } = require("../../services/openaiClient");
 const { lookupWeb } = require("../../services/webLookupService");
+const { getOwnerName } = require("../../lib/branding");
 const corePlay = require("./play");
 const coreSearch = require("./search");
 const coreJoin = require("./join");
@@ -98,6 +99,59 @@ const PENDING_TTL_MS = 2 * 60 * 1000;
 const CHAT_MEMORY_MAX_TURNS = 8;
 const ACTION_HINT_RE = /\b(play|search|skip|stop|pause|resume|queue|shuffle|previous|now\s*playing|seek|forward|rewind|remove|jump|reconnect|voteskip|autoplay|lyrics|songinfo|history|request|say|announce|volume|filter|loop|clear|image|draw|video|generate)\b/i;
 const MUSIC_HINT_RE = /\b(song|music|track|album|artist|youtube|yt|listen|play)\b/i;
+const LICENSE_TEXT = [
+  "MIT License",
+  "",
+  "Copyright (c) 2026 startupgaming",
+  "",
+  "Permission is hereby granted, free of charge, to any person obtaining a copy",
+  "of this software and associated documentation files (the \"Software\"), to deal",
+  "in the Software without restriction, including without limitation the rights",
+  "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell",
+  "copies of the Software, and to permit persons to whom the Software is",
+  "furnished to do so, subject to the following conditions:",
+  "",
+  "The above copyright notice and this permission notice shall be included in all",
+  "copies or substantial portions of the Software.",
+  "",
+  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR",
+  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
+  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE",
+  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
+  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,",
+  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE",
+  "SOFTWARE."
+].join("\n");
+
+function getOwnershipReply() {
+  const ownerName = getOwnerName();
+  return `This bot is owned, developed, and maintained by ${ownerName}.`;
+}
+
+function getLicenseReply() {
+  return LICENSE_TEXT;
+}
+
+function isOwnershipOrLicenseQuestion(text) {
+  const value = String(text || "").toLowerCase();
+  if (!value) return false;
+  return [
+    "license",
+    "licence",
+    "owner",
+    "owned",
+    "developed",
+    "developer",
+    "author",
+    "who made",
+    "who created",
+    "who owns",
+    "who developed",
+    "bot owner",
+    "your license",
+    "what is your license"
+  ].some(token => value.includes(token));
+}
 
 function getAiConfig() {
   const cfg = config?.ai || {};
@@ -237,6 +291,8 @@ function buildChatMessages(client, context, message, personality, language) {
       "Speak naturally like a smart human assistant, concise and helpful.",
       "Do not output JSON in chat mode.",
       "If the user asks for bot actions, answer briefly and ask them to confirm command intent naturally.",
+      `If the user asks about the bot owner, developer, author, or who made it, reply exactly: ${getOwnershipReply()}`,
+      "If the user asks about the license, reply exactly with the MIT License text provided by the system, including the copyright line for startupgaming.",
       `Personality: ${personality}`,
       `Language: ${language}`
     ].join("\n")
@@ -483,6 +539,14 @@ async function resolveAndRunAction(client, context, message, personality, langua
   }
 
   if (!shouldUseActionRouting(message)) {
+    if (isOwnershipOrLicenseQuestion(message)) {
+      const lower = String(message || "").toLowerCase();
+      const text = lower.includes("license") || lower.includes("licence")
+        ? getLicenseReply()
+        : getOwnershipReply();
+      await scheduleAiIdle(client, context.guildId, context.channel);
+      return context.reply(text);
+    }
     const chatMessages = buildChatMessages(client, context, message, personality, language);
     const chatResult = await callAI(chatMessages);
     if (!chatResult.ok) return context.reply(chatResult.error);

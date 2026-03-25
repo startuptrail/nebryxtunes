@@ -1,6 +1,7 @@
 module.exports = {
   branding: {
-    botName: process.env.BOT_NAME || "NebryxTunes"
+    botName: process.env.BOT_NAME || "NebryxTunes",
+    ownerName: process.env.BOT_OWNER_NAME || "startupgaming (Pranav)"
   },
   token: process.env.DISCORD_TOKEN || "",
   prefix: process.env.BOT_PREFIX || "!",
