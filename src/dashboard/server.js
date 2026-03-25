@@ -288,53 +288,53 @@ function renderHealthPage(snapshot) {
       <div class="eyebrow">NebryxTunes System Monitor</div>
       <h1>${escapeHtml(snapshot.botName)} Health</h1>
       <p class="sub">Live gateway diagnostics with a terminal-style surface. This page stays lightweight for uptime checks while matching the darker branded feel of the main site.</p>
-      <div class="chips">
-        <div class="chip">Status<strong>${escapeHtml(statusLabel)}</strong></div>
-        <div class="chip">Gateway<strong>${snapshot.gatewayReady ? "READY" : "WAITING"}</strong></div>
-        <div class="chip">Updated<strong>${escapeHtml(updatedLabel)}</strong></div>
+    <div class="chips">
+        <div class="chip">Status<strong id="health-status-chip">${escapeHtml(statusLabel)}</strong></div>
+        <div class="chip">Gateway<strong id="health-gateway-chip">${snapshot.gatewayReady ? "READY" : "WAITING"}</strong></div>
+        <div class="chip">Updated<strong id="health-updated-chip">${escapeHtml(updatedLabel)}</strong></div>
       </div>
     </section>
 
     <div class="grid">
       <section class="card span-4">
         <div class="label">Signal</div>
-        <div class="value">${escapeHtml(statusLabel)}</div>
+        <div class="value" id="health-signal">${escapeHtml(statusLabel)}</div>
         <div class="small">Derived from Discord gateway connectivity and current presence state.</div>
       </section>
       <section class="card span-4">
         <div class="label">Uptime</div>
-        <div class="value" id="health-uptime" data-uptime-ms="${escapeHtml(String(snapshot.uptimeMs))}">${escapeHtml(uptimeLabel)}</div>
+        <div class="value" id="health-uptime">${escapeHtml(uptimeLabel)}</div>
         <div class="small">Process uptime since the current Render instance booted.</div>
       </section>
       <section class="card span-4">
         <div class="label">Gateway Ping</div>
-        <div class="value">${escapeHtml(pingLabel)}</div>
+        <div class="value" id="health-ping">${escapeHtml(pingLabel)}</div>
         <div class="small">Current Discord WebSocket latency from the active client session.</div>
       </section>
 
       <section class="card span-4">
         <div class="label">Web Port</div>
-        <div class="value">${escapeHtml(String(snapshot.listenPort || "auto"))}</div>
+        <div class="value" id="health-port">${escapeHtml(String(snapshot.listenPort || "auto"))}</div>
         <div class="small">The HTTP port Render should detect for the live web service.</div>
       </section>
 
       <section class="card span-6">
         <div class="label">Deployment Trace</div>
         <div class="terminal">$ bot.status
-STATUS............. ${escapeHtml(statusLabel)}
-GATEWAY............ ${snapshot.gatewayReady ? "READY" : "NOT_READY"}
-SERVERS............ ${escapeHtml(String(snapshot.servers))}
-ACTIVITY........... ${escapeHtml(snapshot.activityName)}
-WEB_PORT........... ${escapeHtml(String(snapshot.listenPort || "auto"))}
-UPDATED_AT......... ${escapeHtml(snapshot.updatedAt)}<span class="cursor"></span></div>
+STATUS............. <span id="health-trace-status">${escapeHtml(statusLabel)}</span>
+GATEWAY............ <span id="health-trace-gateway">${snapshot.gatewayReady ? "READY" : "NOT_READY"}</span>
+SERVERS............ <span id="health-servers">${escapeHtml(String(snapshot.servers))}</span>
+ACTIVITY........... <span id="health-activity">${escapeHtml(snapshot.activityName)}</span>
+WEB_PORT........... <span id="health-trace-port">${escapeHtml(String(snapshot.listenPort || "auto"))}</span>
+UPDATED_AT......... <span id="health-trace-updated">${escapeHtml(snapshot.updatedAt)}</span><span class="cursor"></span></div>
       </section>
       <section class="card span-6">
         <div class="label">Runtime Stats</div>
         <div class="terminal">$ metrics.snapshot
-SERVER_COUNT....... ${escapeHtml(String(snapshot.servers))}
-BOT_ACTIVITY....... ${escapeHtml(snapshot.activityName)}
-PING_MS............ ${escapeHtml(String(snapshot.ping))}
-UPTIME_MS.......... <span id="health-uptime-inline" data-uptime-ms="${escapeHtml(String(snapshot.uptimeMs))}">${escapeHtml(uptimeLabel)}</span>
+SERVER_COUNT....... <span id="health-server-count">${escapeHtml(String(snapshot.servers))}</span>
+BOT_ACTIVITY....... <span id="health-bot-activity">${escapeHtml(snapshot.activityName)}</span>
+PING_MS............ <span id="health-ping-inline">${escapeHtml(String(snapshot.ping))}</span>
+UPTIME_MS.......... <span id="health-uptime-inline">${escapeHtml(uptimeLabel)}</span>
 HEALTH_ENDPOINT.... /health</div>
       </section>
 
@@ -360,17 +360,67 @@ HEALTH_ENDPOINT.... /health</div>
             seconds + "s"
           ].filter(Boolean).join(" ");
         };
-        const start = Number(document.getElementById("health-uptime")?.dataset.uptimeMs || 0);
-        const primary = document.getElementById("health-uptime");
-        const inline = document.getElementById("health-uptime-inline");
-        if (!primary && !inline) return;
-        const tick = () => {
-          const value = fmt(start + (Date.now() - ${Date.now()}));
-          if (primary) primary.textContent = value;
-          if (inline) inline.textContent = value;
+        const nodes = {
+          title: document.title,
+          accent: document.documentElement.style,
+          statusChip: document.getElementById("health-status-chip"),
+          gatewayChip: document.getElementById("health-gateway-chip"),
+          updatedChip: document.getElementById("health-updated-chip"),
+          signal: document.getElementById("health-signal"),
+          uptime: document.getElementById("health-uptime"),
+          ping: document.getElementById("health-ping"),
+          port: document.getElementById("health-port"),
+          traceStatus: document.getElementById("health-trace-status"),
+          traceGateway: document.getElementById("health-trace-gateway"),
+          servers: document.getElementById("health-servers"),
+          activity: document.getElementById("health-activity"),
+          tracePort: document.getElementById("health-trace-port"),
+          traceUpdated: document.getElementById("health-trace-updated"),
+          serverCount: document.getElementById("health-server-count"),
+          botActivity: document.getElementById("health-bot-activity"),
+          pingInline: document.getElementById("health-ping-inline"),
+          uptimeInline: document.getElementById("health-uptime-inline")
         };
-        tick();
-        setInterval(tick, 3000);
+        const setText = (el, value) => { if (el) el.textContent = value; };
+        const apply = (data) => {
+          const status = String(data?.status || "offline").toUpperCase();
+          const gateway = data?.gatewayReady ? "READY" : "WAITING";
+          const accent = String(data?.status || "offline") === "offline" ? "#ff5f57" : String(data?.status || "offline") === "streaming" ? "#47f6ff" : "#7dff7a";
+          const uptime = fmt(data?.uptimeMs || 0);
+          const ping = Number(data?.ping);
+          const pingText = Number.isFinite(ping) && ping >= 0 ? Math.round(ping) + " ms" : "Unknown";
+          const port = data?.listenPort ?? "auto";
+          const updated = data?.updatedAt ? new Date(data.updatedAt).toISOString().replace("T", " ").replace(".000Z", " UTC") : "Unknown";
+          document.documentElement.style.setProperty("--accent", accent);
+          document.documentElement.style.setProperty("--accent-soft", accent);
+          document.title = (data?.botName || "${escapeHtml(snapshot.botName)}") + " Health";
+          setText(nodes.statusChip, status);
+          setText(nodes.gatewayChip, gateway);
+          setText(nodes.updatedChip, updated);
+          setText(nodes.signal, status);
+          setText(nodes.uptime, uptime);
+          setText(nodes.ping, pingText);
+          setText(nodes.port, String(port));
+          setText(nodes.traceStatus, status);
+          setText(nodes.traceGateway, data?.gatewayReady ? "READY" : "NOT_READY");
+          setText(nodes.servers, String(data?.servers ?? 0));
+          setText(nodes.activity, String(data?.activityName || "Idle"));
+          setText(nodes.tracePort, String(port));
+          setText(nodes.traceUpdated, String(data?.updatedAt || "unknown"));
+          setText(nodes.serverCount, String(data?.servers ?? 0));
+          setText(nodes.botActivity, String(data?.activityName || "Idle"));
+          setText(nodes.pingInline, String(Number.isFinite(ping) ? Math.round(ping) : -1));
+          setText(nodes.uptimeInline, uptime);
+        };
+        const poll = async () => {
+          try {
+            const res = await fetch("/api/bot", { cache: "no-store" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            apply(await res.json());
+          } catch (_) {}
+        };
+        poll();
+        setInterval(poll, 3000);
       })();
     </script>
   </main>
