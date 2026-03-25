@@ -20,6 +20,16 @@ function sendJson(res, status, payload) {
   res.end(body);
 }
 
+function sendText(res, status, body) {
+  const text = String(body ?? "");
+  res.writeHead(status, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Content-Length": Buffer.byteLength(text),
+    "Cache-Control": "no-store"
+  });
+  res.end(text);
+}
+
 function sendHtml(res, status, filePath) {
   fs.readFile(filePath, (err, data) => {
     if (err) {
@@ -391,6 +401,10 @@ async function startDashboardServer(client) {
       return res.end(html);
     }
 
+    if (req.method === "GET" && (url.pathname === "/uptime" || url.pathname === "/ping")) {
+      return sendText(res, 200, "OK");
+    }
+
     if (req.method === "GET" && url.pathname === "/api/bot") {
       try {
         return sendJson(res, 200, getBotSnapshot(client, port));
@@ -416,6 +430,7 @@ async function startDashboardServer(client) {
   console.log(`[WEB] Landing page  → http://${host}:${port}/`);
   console.log(`[WEB] Bot API       → http://${host}:${port}/api/bot`);
   console.log(`[WEB] Health page   → http://${host}:${port}/health`);
+  console.log(`[WEB] Uptime check  → http://${host}:${port}/uptime`);
   return server;
 }
 
