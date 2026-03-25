@@ -388,10 +388,23 @@ async function init() {
   });
 
   const token = process.env.DISCORD_TOKEN || config.token;
-  if (!token) { console.error("Discord token is missing."); process.exit(1); }
-  client.login(token)
-    .then(() => console.log("✅ [DISCORD] Login Success"))
-    .catch((error) => { console.error("🔴 [DISCORD] Login Failed:", error); process.exit(1); });
+  const trimmedToken = String(token || "").trim();
+  console.log(`[DISCORD] token_present=${!!trimmedToken} token_length=${trimmedToken.length}`);
+  if (!trimmedToken) { console.error("Discord token is missing."); process.exit(1); }
+
+  const readyTimeout = setTimeout(() => {
+    console.error("[DISCORD] Ready event did not fire within 30s after login start.");
+  }, 30 * 1000);
+  client.once("ready", () => clearTimeout(readyTimeout));
+
+  console.log("[DISCORD] Starting login...");
+  try {
+    await client.login(trimmedToken);
+    console.log("✅ [DISCORD] Login Success");
+  } catch (error) {
+    console.error("🔴 [DISCORD] Login Failed:", error);
+    process.exit(1);
+  }
 }
 
 client.riffy.on("nodeConnect", node => console.log(`🎵 [LAVALINK] Node Connected (${node.name})`));
