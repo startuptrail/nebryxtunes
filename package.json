@@ -2,6 +2,8 @@
   "name": "discord-music-plus-plus-bot",
   "version": "1.0.0",
   "description": "Full Discord Music++ bot — prefix, slash, mention → single core logic",
+  "author": "StartupGaming Replay",
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

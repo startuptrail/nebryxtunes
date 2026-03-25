@@ -78,6 +78,12 @@ Security monitoring:
 - **Start:** `node index.js`
 - Add **MongoDB** (e.g. Atlas) and **Lavalink** (separate service or external). Set env or edit `config.js` in build.
 
+## License
+
+This project is licensed under the MIT License.
+
+Copyright (c) 2026 startupgaming
+
 ## Commands (summary)
 
 - **Music:** play, pause, resume, stop, skip, previous, nowplaying, search, request, voteskip

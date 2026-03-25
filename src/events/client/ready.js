@@ -7,7 +7,7 @@ const { apply247StateToPlayer } = require("../../lib/twentyFourSeven");
 console.log("ready.js loaded");
 
 module.exports = {
-  name: "ready",
+  name: "clientReady",
   once: true,
   async execute(client) {
     const start = client.startedAt ? Date.now() - client.startedAt : 0;
