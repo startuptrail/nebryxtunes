@@ -129,7 +129,9 @@ function buildOverview(client, prefix, commands) {
       {
         name: "Essential Links",
         value: [
+          config.websiteUrl ? `[Website](${config.websiteUrl})` : "Website: Not set",
           config.supportUrl ? `[Support Server](${config.supportUrl})` : "Support Server: Not set",
+          config.contactEmail ? `[Email](mailto:${config.contactEmail})` : "Email: Not set",
           getInviteUrl(client) ? `[Invite Bot](${getInviteUrl(client)})` : "Invite Bot: Not set"
         ].join("\n")
       }

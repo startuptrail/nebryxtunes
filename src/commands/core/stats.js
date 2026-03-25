@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const os = require("os");
+const config = require("../../../config");
 const { getPoweredByText } = require("../../lib/branding");
 function formatUptime(ms) {
   const s = Math.floor(ms / 1000) % 60;
@@ -99,6 +100,15 @@ module.exports = {
         {
           name: "🌐  Powered By",
           value: getPoweredByText(),
+          inline: false
+        },
+        {
+          name: "🔗  Links",
+          value: [
+            config.websiteUrl ? `[Website](${config.websiteUrl})` : "Website: Not set",
+            config.supportUrl ? `[Support Server](${config.supportUrl})` : "Support Server: Not set",
+            config.contactEmail ? `[Email](mailto:${config.contactEmail})` : "Email: Not set"
+          ].join("\n"),
           inline: false
         }
       )

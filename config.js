@@ -13,7 +13,9 @@ module.exports = {
       : "",
     model: process.env.GROQ_MODEL || "openai/gpt-oss-20b"
   },
-  supportUrl: process.env.SUPPORT_URL || "https://discord.sparecloud.in",
+  websiteUrl: process.env.WEBSITE_URL || "https://nebryxtunes.ibot.qzz.io",
+  supportUrl: process.env.SUPPORT_URL || "https://dsc.gg/sparecloud",
+  contactEmail: process.env.CONTACT_EMAIL || "contact.startupgaming@gmail.com",
   dashboard: {
     ownerId: process.env.DASHBOARD_OWNER_ID || "1234512256344002650",
     ownerIds: (process.env.DASHBOARD_OWNER_IDS || "").split(",").map(x => x.trim()).filter(Boolean),

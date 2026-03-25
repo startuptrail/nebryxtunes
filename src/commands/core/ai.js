@@ -95,6 +95,7 @@ const ALLOWED_ACTIONS = new Set([
 
 const PERSONALITIES = new Set(["chill", "hype", "meme"]);
 const AFFIRMATIVE_RE = /^(yes|yeah|yep|yup|ya|yea|ok|okay|sure|haan|han|hmm yes|do it|go ahead)$/i;
+const NEGATIVE_RE = /^(no|nope|nah|cancel|stop|don't|do not)$/i;
 const PENDING_TTL_MS = 2 * 60 * 1000;
 const CHAT_MEMORY_MAX_TURNS = 8;
 const ACTION_HINT_RE = /\b(play|search|skip|stop|pause|resume|queue|shuffle|previous|now\s*playing|seek|forward|rewind|remove|jump|reconnect|voteskip|autoplay|lyrics|songinfo|history|request|say|announce|volume|filter|loop|clear|image|draw|video|generate)\b/i;
@@ -255,6 +256,51 @@ function clearPendingAction(client, context) {
   const store = getPendingStore(client);
   const key = getPendingKey(context);
   store.delete(key);
+}
+
+function setPendingConfirmation(client, context, command, args, prompt) {
+  setPendingAction(client, context, "__AI_CONFIRM__", {
+    command,
+    args,
+    prompt: String(prompt || "").trim()
+  });
+}
+
+function runConfirmedAiSetting(client, context, pending) {
+  const command = String(pending?.args?.command || "").toLowerCase();
+  if (command === "on" || command === "enable") {
+    return Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { aiEnabled: true, aiAutoDisabled: false } },
+      { upsert: true }
+    ).then(() => context.reply("AI enabled."));
+  }
+  if (command === "off" || command === "disable") {
+    return Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { aiEnabled: false } },
+      { upsert: true }
+    ).then(() => context.reply("AI disabled."));
+  }
+  if (command === "personality") {
+    const mode = String(pending?.args?.mode || "").toLowerCase();
+    if (!PERSONALITIES.has(mode)) return context.reply("Use: chill | hype | meme");
+    return Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { personality: mode } },
+      { upsert: true }
+    ).then(() => context.reply(`Personality set to ${mode}.`));
+  }
+  if (command === "language") {
+    const lang = String(pending?.args?.lang || "").trim();
+    if (!lang) return context.reply("Provide a language name.");
+    return Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { language: lang.slice(0, 32) } },
+      { upsert: true }
+    ).then(() => context.reply(`Language set to ${lang.slice(0, 32)}.`));
+  }
+  return context.reply("Invalid AI action.");
 }
 
 function getChatMemoryKey(context) {
@@ -1027,42 +1073,63 @@ async function run(client, context) {
   const language = doc?.language || "English";
   const aiEnabled = doc?.aiEnabled !== false;
   const aiAutoDisabled = doc?.aiAutoDisabled === true;
+  const pending = getPendingAction(client, context);
+  const isConfirmed = AFFIRMATIVE_RE.test(raw);
+  const isCancelled = NEGATIVE_RE.test(raw);
+
+  if (pending?.action === "__AI_CONFIRM__" && isCancelled) {
+    clearPendingAction(client, context);
+    return context.reply("Cancelled.");
+  }
+  if (pending?.action === "__AI_CONFIRM__" && isConfirmed) {
+    clearPendingAction(client, context);
+    return runConfirmedAiSetting(client, context, pending);
+  }
 
   if (sub === "on" || sub === "enable") {
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      { $set: { aiEnabled: true, aiAutoDisabled: false } },
-      { upsert: true }
+    setPendingConfirmation(
+      client,
+      context,
+      "on",
+      { command: "on" },
+      "Are you sure you want to enable AI? Reply `yes` to confirm or `no` to cancel."
     );
-    return context.reply("AI enabled.");
+    return context.reply("Are you sure you want to enable AI? Reply `yes` to confirm or `no` to cancel.");
   }
   if (sub === "off" || sub === "disable") {
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      { $set: { aiEnabled: false } },
-      { upsert: true }
+    setPendingConfirmation(
+      client,
+      context,
+      "off",
+      { command: "off" },
+      "Are you sure you want to disable AI? Reply `yes` to confirm or `no` to cancel."
     );
-    return context.reply("AI disabled.");
+    return context.reply("Are you sure you want to disable AI? Reply `yes` to confirm or `no` to cancel.");
   }
   if (sub === "personality") {
     const mode = String(words[1] || "").toLowerCase();
     if (!PERSONALITIES.has(mode)) return context.reply("Use: chill | hype | meme");
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      { $set: { personality: mode } },
-      { upsert: true }
+    setPendingConfirmation(
+      client,
+      context,
+      "personality",
+      { command: "personality", mode },
+      `Are you sure you want to set personality to ${mode}? Reply \`yes\` to confirm or \`no\` to cancel.`
     );
-    return context.reply(`Personality set to ${mode}.`);
+    return context.reply(`Are you sure you want to set personality to ${mode}? Reply \`yes\` to confirm or \`no\` to cancel.`);
   }
   if (sub === "language") {
     const lang = String(words.slice(1).join(" ") || "").trim();
     if (!lang) return context.reply("Provide a language name.");
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      { $set: { language: lang.slice(0, 32) } },
-      { upsert: true }
+    const nextLang = lang.slice(0, 32);
+    setPendingConfirmation(
+      client,
+      context,
+      "language",
+      { command: "language", lang: nextLang },
+      `Are you sure you want to set language to ${nextLang}? Reply \`yes\` to confirm or \`no\` to cancel.`
     );
-    return context.reply(`Language set to ${lang.slice(0, 32)}.`);
+    return context.reply(`Are you sure you want to set language to ${nextLang}? Reply \`yes\` to confirm or \`no\` to cancel.`);
   }
   if (sub === "status") {
     const status = aiEnabled ? "on" : "off";
@@ -1073,6 +1140,10 @@ async function run(client, context) {
   if (!aiEnabled) {
     const msg = aiAutoDisabled ? "AI is disabled due to inactivity. Use `ai on` to reactivate." : "AI is disabled. Use `ai on`.";
     return context.reply(msg);
+  }
+
+  if (pending?.action === "__AI_CONFIRM__" && !isConfirmed && !isCancelled) {
+    return context.reply("Reply `yes` to confirm or `no` to cancel.");
   }
 
   const message = String(raw || "").trim();
