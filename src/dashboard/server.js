@@ -98,17 +98,7 @@ function renderHealthPage(snapshot) {
   const statusLabel = snapshot.status.toUpperCase();
   const uptimeLabel = formatDuration(snapshot.uptimeMs);
   const pingLabel = snapshot.ping >= 0 ? `${snapshot.ping} ms` : "Unknown";
-  const updatedLabel = new Date(snapshot.updatedAt).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-    timeZone: "UTC",
-    timeZoneName: "short"
-  });
+  const updatedLabel = new Date(snapshot.updatedAt).toISOString().replace("T", " ").replace(".000Z", " UTC");
 
   return `<!doctype html>
 <html lang="en">
@@ -116,7 +106,6 @@ function renderHealthPage(snapshot) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <meta http-equiv="refresh" content="10">
   <title>${escapeHtml(snapshot.botName)} Health</title>
   <style>
     :root {
@@ -304,7 +293,7 @@ function renderHealthPage(snapshot) {
       </section>
       <section class="card span-4">
         <div class="label">Uptime</div>
-        <div class="value">${escapeHtml(uptimeLabel)}</div>
+        <div class="value" id="health-uptime" data-uptime-ms="${escapeHtml(String(snapshot.uptimeMs))}">${escapeHtml(uptimeLabel)}</div>
         <div class="small">Process uptime since the current Render instance booted.</div>
       </section>
       <section class="card span-4">
@@ -335,19 +324,44 @@ UPDATED_AT......... ${escapeHtml(snapshot.updatedAt)}<span class="cursor"></span
 SERVER_COUNT....... ${escapeHtml(String(snapshot.servers))}
 BOT_ACTIVITY....... ${escapeHtml(snapshot.activityName)}
 PING_MS............ ${escapeHtml(String(snapshot.ping))}
-UPTIME_MS.......... ${escapeHtml(String(snapshot.uptimeMs))}
+UPTIME_MS.......... <span id="health-uptime-inline" data-uptime-ms="${escapeHtml(String(snapshot.uptimeMs))}">${escapeHtml(uptimeLabel)}</span>
 HEALTH_ENDPOINT.... /health</div>
       </section>
 
       <section class="card span-12">
         <div class="label">Auto Refresh</div>
-        <div class="terminal">This page refreshes itself every 10 seconds so uptime monitors and browser tabs stay in sync.<span class="cursor"></span></div>
+        <div class="terminal">This page stays open without reloading. Uptime updates live in the browser every second.<span class="cursor"></span></div>
       </section>
     </div>
 
     <div class="footer">MIT licensed NebryxTunes status surface</div>
     <script>
-      setTimeout(() => location.reload(), 10000);
+      (() => {
+        const fmt = (ms) => {
+          const totalSeconds = Math.max(0, Math.floor(Number(ms || 0) / 1000));
+          const days = Math.floor(totalSeconds / 86400);
+          const hours = Math.floor((totalSeconds % 86400) / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          return [
+            days ? days + "d" : "",
+            hours ? hours + "h" : "",
+            minutes ? minutes + "m" : "",
+            seconds + "s"
+          ].filter(Boolean).join(" ");
+        };
+        const start = Number(document.getElementById("health-uptime")?.dataset.uptimeMs || 0);
+        const primary = document.getElementById("health-uptime");
+        const inline = document.getElementById("health-uptime-inline");
+        if (!primary && !inline) return;
+        const tick = () => {
+          const value = fmt(start + (Date.now() - ${Date.now()}));
+          if (primary) primary.textContent = value;
+          if (inline) inline.textContent = value;
+        };
+        tick();
+        setInterval(tick, 3000);
+      })();
     </script>
   </main>
 </body>
