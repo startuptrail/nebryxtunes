@@ -132,27 +132,106 @@ const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI is OpenAI,
 const ATTRIBUTION_PATTERNS = [
   {
     role: "license",
-    tokens: ["license", "licence", "your license", "what is your license"]
+    tokens: [
+      "license",
+      "licence",
+      "your license",
+      "what is your license",
+      "what license",
+      "license of bot",
+      "bot license"
+    ]
   },
   {
     role: "creator",
-    tokens: ["creator", "created", "who created", "who built", "built you", "made you", "who made", "who created you"]
+    tokens: [
+      "creator",
+      "created",
+      "who created",
+      "who built",
+      "built you",
+      "made you",
+      "who made",
+      "who created you",
+      "who make you",
+      "who maked you",
+      "who build you",
+      "your creator",
+      "creater",
+      "creatr",
+      "who is your creator",
+      "what is your creator"
+    ]
   },
   {
     role: "developer",
-    tokens: ["developer", "developed", "who developed", "engineer", "engineers", "improve you", "improved"]
+    tokens: [
+      "developer",
+      "developed",
+      "who developed",
+      "engineer",
+      "engineers",
+      "improve you",
+      "improved",
+      "who is your developer",
+      "who is developer",
+      "who developed u",
+      "who develop u",
+      "dev",
+      "develper",
+      "developr",
+      "devloper",
+      "deveplod",
+      "develpod",
+      "develeped",
+      "who is deveplod u"
+    ]
   },
   {
     role: "organization",
-    tokens: ["organization", "organisation", "company", "company behind you", "openai"]
+    tokens: [
+      "organization",
+      "organisation",
+      "company",
+      "company behind you",
+      "openai",
+      "who is your organization",
+      "what is your organization",
+      "which organization",
+      "which company made you",
+      "who is behind you"
+    ]
   },
   {
     role: "maintainer",
-    tokens: ["maintainer", "maintained", "who maintains", "keeps systems running"]
+    tokens: [
+      "maintainer",
+      "maintained",
+      "who maintains",
+      "keeps systems running",
+      "who maintain",
+      "maintain you",
+      "who is your maintainer",
+      "system maintainer"
+    ]
   },
   {
     role: "owner",
-    tokens: ["owner", "owned", "author", "who owns", "bot owner"]
+    tokens: [
+      "owner",
+      "owned",
+      "author",
+      "who owns",
+      "bot owner",
+      "who is your owner",
+      "what is your owner",
+      "what your owner",
+      "who your owner",
+      "yoour owner",
+      "ur owner",
+      "owener",
+      "onwer"
+    ]
   }
 ];
 
