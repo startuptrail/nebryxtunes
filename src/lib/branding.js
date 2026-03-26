@@ -17,7 +17,7 @@ function getPoweredByText() {
 }
 
 function getNowPlayingFooter() {
-  return `${getBotName()} • Now Playing • Developed By ${getOwnerName()}`;
+  return `${getBotName()} • Now Playing`;
 }
 
 module.exports = {
