@@ -5,7 +5,6 @@ const Warning = require("../../database/models/Warning");
 const { parseAiPayload } = require("../../lib/safeJson");
 const { runGroqChat } = require("../../services/openaiClient");
 const { lookupWeb } = require("../../services/webLookupService");
-const { getOwnerName } = require("../../lib/branding");
 const corePlay = require("./play");
 const coreSearch = require("./search");
 const coreJoin = require("./join");
@@ -124,34 +123,66 @@ const LICENSE_TEXT = [
   "SOFTWARE."
 ].join("\n");
 
-function getOwnershipReply() {
-  const ownerName = getOwnerName();
-  return `This bot is owned, developed, and maintained by ${ownerName}.`;
+const BOT_OWNER_REPLY = "This bot is owned, developed, and maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+const BOT_CREATOR_REPLY = "This bot was created by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+const BOT_DEVELOPER_REPLY = "This bot is developed and improved by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+const BOT_MAINTAINER_REPLY = "This bot is maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI is OpenAI, while the bot itself is owned, developed, and maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+
+const ATTRIBUTION_PATTERNS = [
+  {
+    role: "license",
+    tokens: ["license", "licence", "your license", "what is your license"]
+  },
+  {
+    role: "creator",
+    tokens: ["creator", "created", "who created", "who built", "built you", "made you", "who made", "who created you"]
+  },
+  {
+    role: "developer",
+    tokens: ["developer", "developed", "who developed", "engineer", "engineers", "improve you", "improved"]
+  },
+  {
+    role: "organization",
+    tokens: ["organization", "organisation", "company", "company behind you", "openai"]
+  },
+  {
+    role: "maintainer",
+    tokens: ["maintainer", "maintained", "who maintains", "keeps systems running"]
+  },
+  {
+    role: "owner",
+    tokens: ["owner", "owned", "author", "who owns", "bot owner"]
+  }
+];
+
+function getAttributionReply(text) {
+  const value = String(text || "").toLowerCase();
+  if (!value) return null;
+
+  if (ATTRIBUTION_PATTERNS[0].tokens.some(token => value.includes(token))) {
+    return getLicenseReply();
+  }
+  if (ATTRIBUTION_PATTERNS[1].tokens.some(token => value.includes(token))) {
+    return BOT_CREATOR_REPLY;
+  }
+  if (ATTRIBUTION_PATTERNS[2].tokens.some(token => value.includes(token))) {
+    return BOT_DEVELOPER_REPLY;
+  }
+  if (ATTRIBUTION_PATTERNS[3].tokens.some(token => value.includes(token))) {
+    return BOT_ORGANIZATION_REPLY;
+  }
+  if (ATTRIBUTION_PATTERNS[4].tokens.some(token => value.includes(token))) {
+    return BOT_MAINTAINER_REPLY;
+  }
+  if (ATTRIBUTION_PATTERNS[5].tokens.some(token => value.includes(token))) {
+    return BOT_OWNER_REPLY;
+  }
+  return null;
 }
 
 function getLicenseReply() {
   return LICENSE_TEXT;
-}
-
-function isOwnershipOrLicenseQuestion(text) {
-  const value = String(text || "").toLowerCase();
-  if (!value) return false;
-  return [
-    "license",
-    "licence",
-    "owner",
-    "owned",
-    "developed",
-    "developer",
-    "author",
-    "who made",
-    "who created",
-    "who owns",
-    "who developed",
-    "bot owner",
-    "your license",
-    "what is your license"
-  ].some(token => value.includes(token));
 }
 
 function getAiConfig() {
@@ -179,6 +210,12 @@ function buildPrompt({ message, personality, language, canModerate, allowModerat
     "Do not use SEARCH unless the request is clearly about songs/music/artists.",
     "For factual lookups (artist details, release dates, views, general info), use WEB.",
     "If the user confirms with short words like yes/yeah/ok and a song was just discussed, return PLAY for that song.",
+    `If the user asks about the creator, reply exactly: ${BOT_CREATOR_REPLY}`,
+    `If the user asks about the developer, reply exactly: ${BOT_DEVELOPER_REPLY}`,
+    `If the user asks about the organization behind the bot or OpenAI, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
+    `If the user asks about the maintainer, reply exactly: ${BOT_MAINTAINER_REPLY}`,
+    `If the user asks about the owner, author, or who made the bot, reply exactly: ${BOT_OWNER_REPLY}`,
+    `If the user asks about the license, reply exactly with: ${getLicenseReply()}`,
     `Personality: ${personality}`,
     `Language: ${language}`,
     `Moderator: ${canModerate ? "true" : "false"}`,
@@ -371,8 +408,12 @@ function buildChatMessages(client, context, message, personality, language) {
       "Speak naturally like a smart human assistant, concise and helpful.",
       "Do not output JSON in chat mode.",
       "If the user asks for bot actions, answer briefly and ask them to confirm command intent naturally.",
-      `If the user asks about the bot owner, developer, author, or who made it, reply exactly: ${getOwnershipReply()}`,
-      "If the user asks about the license, reply exactly with the MIT License text provided by the system, including the copyright line for Not Flexxy.",
+      `If the user asks about the creator, reply exactly: ${BOT_CREATOR_REPLY}`,
+      `If the user asks about the developer, reply exactly: ${BOT_DEVELOPER_REPLY}`,
+      `If the user asks about the organization behind the bot or OpenAI, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
+      `If the user asks about the maintainer, reply exactly: ${BOT_MAINTAINER_REPLY}`,
+      `If the user asks about the owner, author, or who made the bot, reply exactly: ${BOT_OWNER_REPLY}`,
+      `If the user asks about the license, reply exactly with: ${LICENSE_TEXT}`,
       `Personality: ${personality}`,
       `Language: ${language}`
     ].join("\n")
@@ -619,13 +660,10 @@ async function resolveAndRunAction(client, context, message, personality, langua
   }
 
   if (!shouldUseActionRouting(message)) {
-    if (isOwnershipOrLicenseQuestion(message)) {
-      const lower = String(message || "").toLowerCase();
-      const text = lower.includes("license") || lower.includes("licence")
-        ? getLicenseReply()
-        : getOwnershipReply();
+    const attributionReply = getAttributionReply(message);
+    if (attributionReply) {
       await scheduleAiIdle(client, context.guildId, context.channel);
-      return context.reply(text);
+      return context.reply(attributionReply);
     }
     const chatMessages = buildChatMessages(client, context, message, personality, language);
     const chatResult = await callAI(chatMessages);
