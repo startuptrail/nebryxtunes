@@ -13,7 +13,7 @@ function getOwnerName() {
 }
 
 function getPoweredByText() {
-  return `> 🚀 **${getBotName()}**\n> Powered By **🤖 Bot Team Devs**`;
+  return `> 🚀 **${getBotName()}**\n> By **🤖 Bot Team Devs**`;
 }
 
 function getNowPlayingFooter() {
