@@ -20,6 +20,7 @@ const data = new SlashCommandBuilder()
     sub
       .setName("clear")
       .setDescription("Clear the current auto response")
+      .addStringOption(o => o.setName("trigger").setDescription("Remove only this trigger").setRequired(false))
   );
 
 module.exports = {

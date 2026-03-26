@@ -12,6 +12,15 @@ const guildSchema = new mongoose.Schema({
   language: { type: String, default: "English" },
   aiEnabled: { type: Boolean, default: true },
   aiAutoDisabled: { type: Boolean, default: false },
+  autoResponses: {
+    type: [
+      {
+        trigger: { type: String, required: true },
+        reply: { type: String, required: true }
+      }
+    ],
+    default: []
+  },
   autoResponseEnabled: { type: Boolean, default: false },
   autoResponseTrigger: { type: String, default: null },
   autoResponseText: { type: String, default: null },

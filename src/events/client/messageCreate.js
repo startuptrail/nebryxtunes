@@ -128,10 +128,14 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
-        const autoTrigger = normalizeAutoText(guildData?.autoResponseTrigger);
-        const autoResponse = String(guildData?.autoResponseText || "").trim();
-        if (guildData?.autoResponseEnabled && autoTrigger && autoResponse && normalizeAutoText(content) === autoTrigger) {
-            await message.channel.send({ content: autoResponse, allowedMentions: { repliedUser: false } }).catch(() => {});
+        const responses = Array.isArray(guildData?.autoResponses) && guildData.autoResponses.length
+            ? guildData.autoResponses
+            : (guildData?.autoResponseEnabled && guildData?.autoResponseTrigger && guildData?.autoResponseText
+                ? [{ trigger: guildData.autoResponseTrigger, reply: guildData.autoResponseText }]
+                : []);
+        const matched = responses.find(item => normalizeAutoText(content) === normalizeAutoText(item?.trigger));
+        if (matched?.reply) {
+            await message.channel.send({ content: String(matched.reply).trim(), allowedMentions: { repliedUser: false } }).catch(() => {});
             return;
         }
         const ctx = {

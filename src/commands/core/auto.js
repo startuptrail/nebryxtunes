@@ -6,6 +6,15 @@ function normalize(value) {
   return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function getAutoResponses(doc) {
+  const list = Array.isArray(doc?.autoResponses) ? doc.autoResponses : [];
+  if (list.length) return list.filter(item => item && item.trigger && item.reply);
+  if (doc?.autoResponseEnabled && doc?.autoResponseTrigger && doc?.autoResponseText) {
+    return [{ trigger: doc.autoResponseTrigger, reply: doc.autoResponseText }];
+  }
+  return [];
+}
+
 function getOwnerIds() {
   return new Set(
     [
@@ -41,6 +50,10 @@ function getResponseParts(context, sub) {
 
   const args = Array.isArray(context?.args) ? context.args.slice() : [];
   if (sub) args.shift();
+  if (sub === "clear") {
+    const trigger = String(args.join(" ") || "").trim().slice(0, 100);
+    return { trigger, reply: "" };
+  }
   const joined = String(args.join(" ") || "").trim();
   const colonIndex = joined.indexOf(":");
   if (colonIndex >= 0) {
@@ -54,14 +67,70 @@ function getResponseParts(context, sub) {
 }
 
 async function showState(context, doc) {
-  if (!doc?.autoResponseEnabled || !doc?.autoResponseTrigger || !doc?.autoResponseText) {
+  const responses = getAutoResponses(doc);
+  if (!responses.length) {
     return context.reply("Auto response is not configured.");
   }
   return context.reply([
-    "Auto response is enabled.",
-    `Trigger: \`${doc.autoResponseTrigger}\``,
-    `Response: \`${doc.autoResponseText}\``
+    "Auto responses:",
+    ...responses.map((item, index) => `${index + 1}. \`${item.trigger}\` -> \`${item.reply}\``)
   ].join("\n"));
+}
+
+async function saveResponse(context, trigger, reply) {
+  const doc = await Guild.findOne({ guildId: context.guildId }).lean();
+  const responses = getAutoResponses(doc);
+  const normalized = normalize(trigger);
+  const next = responses.filter(item => normalize(item.trigger) !== normalized);
+  next.push({ trigger, reply });
+  await Guild.updateOne(
+    { guildId: context.guildId },
+    {
+      $set: {
+        autoResponses: next,
+        autoResponseEnabled: next.length > 0,
+        autoResponseTrigger: next[0]?.trigger || null,
+        autoResponseText: next[0]?.reply || null
+      }
+    },
+    { upsert: true }
+  );
+}
+
+async function clearResponses(context, trigger) {
+  const doc = await Guild.findOne({ guildId: context.guildId }).lean();
+  const responses = getAutoResponses(doc);
+  if (!trigger) {
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      {
+        $set: {
+          autoResponses: [],
+          autoResponseEnabled: false,
+          autoResponseTrigger: null,
+          autoResponseText: null
+        }
+      },
+      { upsert: true }
+    );
+    return { cleared: "all", count: responses.length };
+  }
+
+  const normalized = normalize(trigger);
+  const next = responses.filter(item => normalize(item.trigger) !== normalized);
+  await Guild.updateOne(
+    { guildId: context.guildId },
+    {
+      $set: {
+        autoResponses: next,
+        autoResponseEnabled: next.length > 0,
+        autoResponseTrigger: next[0]?.trigger || null,
+        autoResponseText: next[0]?.reply || null
+      }
+    },
+    { upsert: true }
+  );
+  return { cleared: "selected", count: responses.length - next.length };
 }
 
 async function run(client, context) {
@@ -76,36 +145,19 @@ async function run(client, context) {
   }
 
   if (sub === "clear" || sub === "remove" || sub === "off" || sub === "disable") {
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      {
-        $set: {
-          autoResponseEnabled: false,
-          autoResponseTrigger: null,
-          autoResponseText: null
-        }
-      },
-      { upsert: true }
-    );
-    return context.reply("Auto response cleared.");
+    const trigger = String(context?.interaction?.isChatInputCommand?.()
+      ? context.options?.trigger || ""
+      : context?.args?.slice(1).join(" ") || "").trim();
+    const result = await clearResponses(context, trigger);
+    if (result.cleared === "all") return context.reply("Auto responses cleared.");
+    return context.reply(result.count > 0 ? "Selected auto response cleared." : "No matching auto response found.");
   }
 
   if (sub === "response" || sub === "set" || sub === "add") {
     const { trigger, reply } = getResponseParts(context, sub);
     if (!trigger) return context.reply("Provide a trigger.");
     if (!reply) return context.reply("Provide a response.");
-
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      {
-        $set: {
-          autoResponseEnabled: true,
-          autoResponseTrigger: trigger,
-          autoResponseText: reply
-        }
-      },
-      { upsert: true }
-    );
+    await saveResponse(context, trigger, reply);
 
     return context.reply([
       "Auto response saved.",
@@ -119,18 +171,7 @@ async function run(client, context) {
     if (!trigger || !reply) {
       return context.reply("Use `!auto hello:hi there`, `@Bot auto hello:hi there`, or `/auto response`.");
     }
-
-    await Guild.updateOne(
-      { guildId: context.guildId },
-      {
-        $set: {
-          autoResponseEnabled: true,
-          autoResponseTrigger: trigger,
-          autoResponseText: reply
-        }
-      },
-      { upsert: true }
-    );
+    await saveResponse(context, trigger, reply);
 
     return context.reply([
       "Auto response saved.",
