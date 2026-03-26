@@ -128,6 +128,8 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
+        const allowedAiChannels = Array.isArray(guildData?.aiAllowedChannelIds) ? guildData.aiAllowedChannelIds.map(String).filter(Boolean) : [];
+        if (!allowedAiChannels.length || !allowedAiChannels.includes(String(message.channel.id))) return;
         const responses = Array.isArray(guildData?.autoResponses) && guildData.autoResponses.length
             ? guildData.autoResponses
             : (guildData?.autoResponseEnabled && guildData?.autoResponseTrigger && guildData?.autoResponseText

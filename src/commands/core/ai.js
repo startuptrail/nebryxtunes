@@ -258,6 +258,40 @@ function clearPendingAction(client, context) {
   store.delete(key);
 }
 
+function getAiAllowedChannels(doc) {
+  return Array.isArray(doc?.aiAllowedChannelIds) ? doc.aiAllowedChannelIds.map(String).filter(Boolean) : [];
+}
+
+function normalizeChannelId(input) {
+  const value = String(input || "").trim();
+  const match = value.match(/^<#(\d+)>$/) || value.match(/^(\d{16,20})$/);
+  return match ? match[1] : "";
+}
+
+function formatChannelList(ids, guild) {
+  const list = Array.isArray(ids) ? ids.filter(Boolean).map(String) : [];
+  if (!list.length) return "No AI channels are configured.";
+  return list.map(id => {
+    const ch = guild?.channels?.cache?.get?.(id);
+    return ch ? `<#${id}>` : `\`${id}\``;
+  }).join("\n");
+}
+
+function normalizeChannelId(input) {
+  const value = String(input || "").trim();
+  const match = value.match(/^<#!?(\d+)>$/) || value.match(/^<#(\d+)>$/) || value.match(/^(\d+)$/);
+  return match ? match[1] : "";
+}
+
+function formatChannelList(ids, guild) {
+  const list = Array.isArray(ids) ? ids.filter(Boolean).map(String) : [];
+  if (!list.length) return "No AI channels configured.";
+  return list.map(id => {
+    const channel = guild?.channels?.cache?.get?.(id);
+    return channel ? `<#${id}>` : `\`${id}\``;
+  }).join("\n");
+}
+
 function setPendingConfirmation(client, context, command, args, prompt) {
   setPendingAction(client, context, "__AI_CONFIRM__", {
     command,
@@ -1073,11 +1107,13 @@ async function run(client, context) {
   const language = doc?.language || "English";
   const aiEnabled = doc?.aiEnabled !== false;
   const aiAutoDisabled = doc?.aiAutoDisabled === true;
+  const currentAllowedChannels = getAiAllowedChannels(doc);
 
   if (sub === "on" || sub === "enable") {
+    const nextChannels = Array.from(new Set(currentAllowedChannels.concat(context.channelId ? [String(context.channelId)] : [])));
     await Guild.updateOne(
       { guildId: context.guildId },
-      { $set: { aiEnabled: true, aiAutoDisabled: false } }
+      { $set: { aiEnabled: true, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } }
     );
     clearPendingAction(client, context);
     return context.reply("AI enabled.");
@@ -1110,6 +1146,54 @@ async function run(client, context) {
     );
     clearPendingAction(client, context);
     return context.reply(`Language set to ${nextLang}.`);
+  }
+  if (sub === "channel") {
+    if (!isAdministrator(context)) return context.reply("Only server administrators can manage AI channels.");
+    const action = String(words[1] || "list").toLowerCase();
+    const targetRaw = String(words.slice(2).join(" ") || "").trim();
+    const targetId = normalizeChannelId(targetRaw || context.channelId);
+    const docNow = await Guild.findOne({ guildId: context.guildId }).lean();
+    const current = getAiAllowedChannels(docNow);
+
+    if (action === "list") {
+      return context.reply([
+        "AI channels:",
+        formatChannelList(current, context.guild)
+      ].join("\n"));
+    }
+
+    if (action === "clear" || action === "reset") {
+      await Guild.updateOne(
+        { guildId: context.guildId },
+        { $set: { aiAllowedChannelIds: [] } },
+        { upsert: true }
+      );
+      return context.reply("AI channels cleared.");
+    }
+
+    if (!targetId) return context.reply("Provide a text channel mention or ID.");
+
+    if (action === "add" || action === "here" || action === "enable") {
+      if (!current.includes(targetId)) current.push(targetId);
+      await Guild.updateOne(
+        { guildId: context.guildId },
+        { $set: { aiAllowedChannelIds: current } },
+        { upsert: true }
+      );
+      return context.reply(`AI enabled in <#${targetId}>.`);
+    }
+
+    if (action === "remove" || action === "delete" || action === "del" || action === "disable") {
+      const next = current.filter(id => id !== targetId);
+      await Guild.updateOne(
+        { guildId: context.guildId },
+        { $set: { aiAllowedChannelIds: next } },
+        { upsert: true }
+      );
+      return context.reply(`AI removed from <#${targetId}>.`);
+    }
+
+    return context.reply("Use: `ai channel add`, `ai channel remove`, `ai channel list`, or `ai channel clear`.");
   }
   if (sub === "status") {
     const status = aiEnabled ? "on" : "off";
@@ -1144,6 +1228,9 @@ async function runChat(client, context, messageText) {
   const language = doc?.language || "English";
   const aiEnabled = doc?.aiEnabled !== false;
   if (!aiEnabled) return;
+  const allowedChannels = getAiAllowedChannels(doc);
+  if (!allowedChannels.length) return;
+  if (!context.channelId || !allowedChannels.includes(String(context.channelId))) return;
   const message = String(messageText || "").trim();
   if (!message) return;
   if (message.length > 500) return context.reply("Message too long. Keep under 500 characters.");
