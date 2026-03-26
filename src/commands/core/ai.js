@@ -1227,21 +1227,42 @@ async function run(client, context) {
   const currentAllowedChannels = getAiAllowedChannels(doc);
 
   if (sub === "on" || sub === "enable") {
-    const nextChannels = Array.from(new Set(currentAllowedChannels.concat(context.channelId ? [String(context.channelId)] : [])));
+    const targetChannelId = normalizeChannelId(context.channelId);
+    const nextChannels = Array.from(
+      new Set(currentAllowedChannels.concat(targetChannelId ? [targetChannelId] : []))
+    );
     await Guild.updateOne(
       { guildId: context.guildId },
       { $set: { aiEnabled: true, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } }
     );
     clearPendingAction(client, context);
-    return context.reply("AI enabled.");
+    if (!targetChannelId) return context.reply("AI enabled.");
+    return context.reply(`AI enabled in <#${targetChannelId}>.`);
   }
   if (sub === "off" || sub === "disable") {
+    const scope = String(words[1] || "").toLowerCase();
+    if (scope === "all" || scope === "global" || scope === "everywhere") {
+      if (!isAdministrator(context)) return context.reply("Only server administrators can disable AI everywhere.");
+      await Guild.updateOne(
+        { guildId: context.guildId },
+        { $set: { aiEnabled: false, aiAutoDisabled: false, aiAllowedChannelIds: [] } },
+        { upsert: true }
+      );
+      clearPendingAction(client, context);
+      return context.reply("AI disabled in all channels.");
+    }
+    const targetChannelId = normalizeChannelId(context.channelId);
+    const nextChannels = currentAllowedChannels.filter(id => id !== targetChannelId);
+    const stillEnabled = nextChannels.length > 0;
     await Guild.updateOne(
       { guildId: context.guildId },
-      { $set: { aiEnabled: false, aiAutoDisabled: false } }
+      { $set: { aiEnabled: stillEnabled, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } },
+      { upsert: true }
     );
     clearPendingAction(client, context);
-    return context.reply("AI disabled.");
+    if (!targetChannelId) return context.reply(stillEnabled ? "AI updated." : "AI disabled.");
+    if (stillEnabled) return context.reply(`AI disabled in <#${targetChannelId}>.`);
+    return context.reply(`AI disabled in <#${targetChannelId}>. No AI channels remain enabled.`);
   }
   if (sub === "personality") {
     const mode = String(words[1] || "").toLowerCase();
@@ -1315,11 +1336,16 @@ async function run(client, context) {
   if (sub === "status") {
     const status = aiEnabled ? "on" : "off";
     const auto = aiAutoDisabled ? " (auto disabled)" : "";
-    return context.reply(`AI: ${status}${auto} • personality: ${personality} • language: ${language}`);
+    const channels = currentAllowedChannels.length
+      ? formatChannelList(currentAllowedChannels, context.guild)
+      : "None";
+    return context.reply(`AI: ${status}${auto} • personality: ${personality} • language: ${language}\nChannels: ${channels}`);
   }
 
   if (!aiEnabled) {
-    const msg = aiAutoDisabled ? "AI is disabled due to inactivity. Use `ai on` to reactivate." : "AI is disabled. Use `ai on`.";
+    const msg = aiAutoDisabled
+      ? "AI is disabled due to inactivity. Use `ai on` in this channel to reactivate."
+      : "AI is disabled here. Use `ai on` in this channel.";
     return context.reply(msg);
   }
 
