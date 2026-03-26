@@ -233,6 +233,7 @@ module.exports = {
       if (interaction.options && interaction.options.data) {
         for (const opt of interaction.options.data) {
           if (opt.options && opt.options.length) {
+            options._subcommand = opt.name;
             for (const sub of opt.options) {
               options[sub.name] = sub.value;
             }

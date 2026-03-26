@@ -9,7 +9,7 @@ function getBotNameUpper() {
 }
 
 function getOwnerName() {
-  return String(config?.branding?.ownerName || "startupgaming (Pranav)").trim() || "startupgaming (Pranav)";
+  return String(config?.branding?.ownerName || "Not Flexxy").trim() || "Not Flexxy";
 }
 
 function getPoweredByText() {

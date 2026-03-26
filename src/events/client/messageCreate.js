@@ -5,8 +5,12 @@ const coreSearch = require('../../commands/core/search');
 const { handleAiModeration } = require('../../lib/moderationHandler');
 const { monitorIncomingMessage } = require('../../lib/securityMonitor');
 
+function normalizeAutoText(value) {
+    return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 module.exports = {
-  name: 'messageCreate',
+    name: 'messageCreate',
   once: false,
   async execute(message, client) {
     if (message.author.bot) return;
@@ -124,6 +128,12 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
+        const autoTrigger = normalizeAutoText(guildData?.autoResponseTrigger);
+        const autoResponse = String(guildData?.autoResponseText || "").trim();
+        if (guildData?.autoResponseEnabled && autoTrigger && autoResponse && normalizeAutoText(content) === autoTrigger) {
+            await message.channel.send({ content: autoResponse, allowedMentions: { repliedUser: false } }).catch(() => {});
+            return;
+        }
         const ctx = {
             guildId: message.guild.id,
             member: message.member,

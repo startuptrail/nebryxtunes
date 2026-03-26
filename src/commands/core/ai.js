@@ -103,7 +103,7 @@ const MUSIC_HINT_RE = /\b(song|music|track|album|artist|youtube|yt|listen|play)\
 const LICENSE_TEXT = [
   "MIT License",
   "",
-  "Copyright (c) 2026 startupgaming",
+  "Copyright (c) 2026 Not Flexxy",
   "",
   "Permission is hereby granted, free of charge, to any person obtaining a copy",
   "of this software and associated documentation files (the \"Software\"), to deal",
@@ -338,7 +338,7 @@ function buildChatMessages(client, context, message, personality, language) {
       "Do not output JSON in chat mode.",
       "If the user asks for bot actions, answer briefly and ask them to confirm command intent naturally.",
       `If the user asks about the bot owner, developer, author, or who made it, reply exactly: ${getOwnershipReply()}`,
-      "If the user asks about the license, reply exactly with the MIT License text provided by the system, including the copyright line for startupgaming.",
+      "If the user asks about the license, reply exactly with the MIT License text provided by the system, including the copyright line for Not Flexxy.",
       `Personality: ${personality}`,
       `Language: ${language}`
     ].join("\n")
@@ -1087,14 +1087,12 @@ async function run(client, context) {
   }
 
   if (sub === "on" || sub === "enable") {
-    setPendingConfirmation(
-      client,
-      context,
-      "on",
-      { command: "on" },
-      "Are you sure you want to enable AI? Reply `yes` to confirm or `no` to cancel."
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { aiEnabled: true, aiAutoDisabled: false } }
     );
-    return context.reply("Are you sure you want to enable AI? Reply `yes` to confirm or `no` to cancel.");
+    clearPendingAction(client, context);
+    return context.reply("AI enabled.");
   }
   if (sub === "off" || sub === "disable") {
     setPendingConfirmation(
