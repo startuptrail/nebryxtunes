@@ -1073,18 +1073,6 @@ async function run(client, context) {
   const language = doc?.language || "English";
   const aiEnabled = doc?.aiEnabled !== false;
   const aiAutoDisabled = doc?.aiAutoDisabled === true;
-  const pending = getPendingAction(client, context);
-  const isConfirmed = AFFIRMATIVE_RE.test(raw);
-  const isCancelled = NEGATIVE_RE.test(raw);
-
-  if (pending?.action === "__AI_CONFIRM__" && isCancelled) {
-    clearPendingAction(client, context);
-    return context.reply("Cancelled.");
-  }
-  if (pending?.action === "__AI_CONFIRM__" && isConfirmed) {
-    clearPendingAction(client, context);
-    return runConfirmedAiSetting(client, context, pending);
-  }
 
   if (sub === "on" || sub === "enable") {
     await Guild.updateOne(
@@ -1105,27 +1093,23 @@ async function run(client, context) {
   if (sub === "personality") {
     const mode = String(words[1] || "").toLowerCase();
     if (!PERSONALITIES.has(mode)) return context.reply("Use: chill | hype | meme");
-    setPendingConfirmation(
-      client,
-      context,
-      "personality",
-      { command: "personality", mode },
-      `Are you sure you want to set personality to ${mode}? Reply \`yes\` to confirm or \`no\` to cancel.`
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { personality: mode } }
     );
-    return context.reply(`Are you sure you want to set personality to ${mode}? Reply \`yes\` to confirm or \`no\` to cancel.`);
+    clearPendingAction(client, context);
+    return context.reply(`Personality set to ${mode}.`);
   }
   if (sub === "language") {
     const lang = String(words.slice(1).join(" ") || "").trim();
     if (!lang) return context.reply("Provide a language name.");
     const nextLang = lang.slice(0, 32);
-    setPendingConfirmation(
-      client,
-      context,
-      "language",
-      { command: "language", lang: nextLang },
-      `Are you sure you want to set language to ${nextLang}? Reply \`yes\` to confirm or \`no\` to cancel.`
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { language: nextLang } }
     );
-    return context.reply(`Are you sure you want to set language to ${nextLang}? Reply \`yes\` to confirm or \`no\` to cancel.`);
+    clearPendingAction(client, context);
+    return context.reply(`Language set to ${nextLang}.`);
   }
   if (sub === "status") {
     const status = aiEnabled ? "on" : "off";
@@ -1136,10 +1120,6 @@ async function run(client, context) {
   if (!aiEnabled) {
     const msg = aiAutoDisabled ? "AI is disabled due to inactivity. Use `ai on` to reactivate." : "AI is disabled. Use `ai on`.";
     return context.reply(msg);
-  }
-
-  if (pending?.action === "__AI_CONFIRM__" && !isConfirmed && !isCancelled) {
-    return context.reply("Reply `yes` to confirm or `no` to cancel.");
   }
 
   const message = String(raw || "").trim();
