@@ -41,6 +41,13 @@ function getResponseParts(context, sub) {
 
   const args = Array.isArray(context?.args) ? context.args.slice() : [];
   if (sub) args.shift();
+  const joined = String(args.join(" ") || "").trim();
+  const colonIndex = joined.indexOf(":");
+  if (colonIndex >= 0) {
+    const trigger = joined.slice(0, colonIndex).trim().slice(0, 100);
+    const reply = joined.slice(colonIndex + 1).trim().slice(0, 1000);
+    return { trigger, reply };
+  }
   const trigger = String(args.shift() || "").trim().slice(0, 100);
   const reply = String(args.join(" ") || "").trim().slice(0, 1000);
   return { trigger, reply };
@@ -87,6 +94,31 @@ async function run(client, context) {
     const { trigger, reply } = getResponseParts(context, sub);
     if (!trigger) return context.reply("Provide a trigger.");
     if (!reply) return context.reply("Provide a response.");
+
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      {
+        $set: {
+          autoResponseEnabled: true,
+          autoResponseTrigger: trigger,
+          autoResponseText: reply
+        }
+      },
+      { upsert: true }
+    );
+
+    return context.reply([
+      "Auto response saved.",
+      `Trigger: \`${trigger}\``,
+      `Response: \`${reply}\``
+    ].join("\n"));
+  }
+
+  if (sub && !["show", "clear", "remove", "off", "disable", "response", "set", "add"].includes(sub)) {
+    const { trigger, reply } = getResponseParts(context, "");
+    if (!trigger || !reply) {
+      return context.reply("Use `!auto hello:hi there`, `@Bot auto hello:hi there`, or `/auto response`.");
+    }
 
     await Guild.updateOne(
       { guildId: context.guildId },

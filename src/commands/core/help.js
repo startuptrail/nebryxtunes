@@ -71,7 +71,7 @@ function getCommands() {
     { name: "stats", description: "Show bot stats", category: "Info", usage: "stats", aliases: ["stats"] },
     { name: "help", description: "Show help menu", category: "Info", usage: "help [category|command]", aliases: ["h"] },
     { name: "prefix", description: "View or change prefix", category: "Settings", usage: "prefix [newPrefix]", aliases: [] },
-    { name: "auto", description: "Set a server auto response", category: "Settings", usage: "auto response <trigger> <response> | auto show | auto clear", aliases: [] },
+    { name: "auto", description: "Set a server auto response", category: "Settings", usage: "prefix: `!auto hello:hi there` | mention: `@Bot auto hello:hi there` | slash: `/auto response`", aliases: [] },
 
     { name: "dj", description: "Manage DJ role", category: "DJ", usage: "dj <set|remove>", aliases: ["djset", "djrm"] },
     { name: "ai", description: "AI chat and moderation", category: "AI", usage: "ai <message|status|on|off|personality|language> | or just talk", aliases: [] },
