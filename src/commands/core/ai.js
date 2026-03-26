@@ -1095,14 +1095,12 @@ async function run(client, context) {
     return context.reply("AI enabled.");
   }
   if (sub === "off" || sub === "disable") {
-    setPendingConfirmation(
-      client,
-      context,
-      "off",
-      { command: "off" },
-      "Are you sure you want to disable AI? Reply `yes` to confirm or `no` to cancel."
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { aiEnabled: false, aiAutoDisabled: false } }
     );
-    return context.reply("Are you sure you want to disable AI? Reply `yes` to confirm or `no` to cancel.");
+    clearPendingAction(client, context);
+    return context.reply("AI disabled.");
   }
   if (sub === "personality") {
     const mode = String(words[1] || "").toLowerCase();
