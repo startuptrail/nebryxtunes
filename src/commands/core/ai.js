@@ -97,6 +97,9 @@ const AFFIRMATIVE_RE = /^(yes|yeah|yep|yup|ya|yea|ok|okay|sure|haan|han|hmm yes|
 const NEGATIVE_RE = /^(no|nope|nah|cancel|stop|don't|do not)$/i;
 const PENDING_TTL_MS = 2 * 60 * 1000;
 const CHAT_MEMORY_MAX_TURNS = 8;
+const AI_IDLE_DEFAULT_MINUTES = 60;
+const AI_IDLE_MIN_MINUTES = 0;
+const AI_IDLE_MAX_MINUTES = 720;
 const ACTION_HINT_RE = /\b(play|search|skip|stop|pause|resume|queue|shuffle|previous|now\s*playing|seek|forward|rewind|remove|jump|reconnect|voteskip|autoplay|lyrics|songinfo|history|request|say|announce|volume|filter|loop|clear|image|draw|video|generate)\b/i;
 const MUSIC_HINT_RE = /\b(song|music|track|album|artist|youtube|yt|listen|play)\b/i;
 const LICENSE_TEXT = [
@@ -825,18 +828,32 @@ function isAdministrator(context) {
 }
 
 async function scheduleAiIdle(client, guildId, channel) {
+  const doc = await Guild.findOne({ guildId }).lean();
+  const idleMinutesRaw = Number(doc?.aiIdleMinutes);
+  const idleMinutes = Number.isFinite(idleMinutesRaw)
+    ? Math.max(AI_IDLE_MIN_MINUTES, Math.min(AI_IDLE_MAX_MINUTES, Math.floor(idleMinutesRaw)))
+    : AI_IDLE_DEFAULT_MINUTES;
+
   if (!client.aiIdleTimers) client.aiIdleTimers = new Map();
   const existing = client.aiIdleTimers.get(guildId);
   if (existing) {
     if (existing.warn) clearTimeout(existing.warn);
     if (existing.disable) clearTimeout(existing.disable);
   }
-  const warn = setTimeout(async () => {
-    const ch = channel || client.channels?.cache?.get?.(client.lastCommandChannel?.get(guildId));
-    if (ch && ch.send) {
-      await ch.send("⚠️ AI will auto-disable in 10 minutes if there is no activity. Talk to keep it on.").catch(() => {});
-    }
-  }, 50 * 60 * 1000);
+  if (idleMinutes <= 0) {
+    client.aiIdleTimers.delete(guildId);
+    return;
+  }
+
+  let warn = null;
+  if (idleMinutes > 10) {
+    warn = setTimeout(async () => {
+      const ch = channel || client.channels?.cache?.get?.(client.lastCommandChannel?.get(guildId));
+      if (ch && ch.send) {
+        await ch.send("⚠️ AI will auto-disable in 10 minutes if there is no activity. Talk to keep it on.").catch(() => {});
+      }
+    }, (idleMinutes - 10) * 60 * 1000);
+  }
   const disable = setTimeout(async () => {
     await Guild.updateOne(
       { guildId },
@@ -848,9 +865,9 @@ async function scheduleAiIdle(client, guildId, channel) {
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("ai_reactivate").setLabel("Reactivate AI").setStyle(ButtonStyle.Success)
       );
-      await ch.send({ content: "⏳ AI auto-disabled after 1 hour of inactivity. Tap below to reactivate.", components: [row] }).catch(() => {});
+      await ch.send({ content: `⏳ AI auto-disabled after ${idleMinutes} minute(s) of inactivity. Tap below to reactivate.`, components: [row] }).catch(() => {});
     }
-  }, 60 * 60 * 1000);
+  }, idleMinutes * 60 * 1000);
   client.aiIdleTimers.set(guildId, { warn, disable });
 }
 
@@ -1224,20 +1241,21 @@ async function run(client, context) {
   const language = doc?.language || "English";
   const aiEnabled = doc?.aiEnabled !== false;
   const aiAutoDisabled = doc?.aiAutoDisabled === true;
+  const aiIdleMinutes = Number.isFinite(Number(doc?.aiIdleMinutes))
+    ? Math.max(AI_IDLE_MIN_MINUTES, Math.min(AI_IDLE_MAX_MINUTES, Math.floor(Number(doc.aiIdleMinutes))))
+    : AI_IDLE_DEFAULT_MINUTES;
   const currentAllowedChannels = getAiAllowedChannels(doc);
 
   if (sub === "on" || sub === "enable") {
     const targetChannelId = normalizeChannelId(context.channelId);
-    const nextChannels = Array.from(
-      new Set(currentAllowedChannels.concat(targetChannelId ? [targetChannelId] : []))
-    );
+    const nextChannels = targetChannelId ? [targetChannelId] : currentAllowedChannels;
     await Guild.updateOne(
       { guildId: context.guildId },
       { $set: { aiEnabled: true, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } }
     );
     clearPendingAction(client, context);
     if (!targetChannelId) return context.reply("AI enabled.");
-    return context.reply(`AI enabled in <#${targetChannelId}>.`);
+    return context.reply(`AI enabled in <#${targetChannelId}> only.`);
   }
   if (sub === "off" || sub === "disable") {
     const scope = String(words[1] || "").toLowerCase();
@@ -1263,6 +1281,33 @@ async function run(client, context) {
     if (!targetChannelId) return context.reply(stillEnabled ? "AI updated." : "AI disabled.");
     if (stillEnabled) return context.reply(`AI disabled in <#${targetChannelId}>.`);
     return context.reply(`AI disabled in <#${targetChannelId}>. No AI channels remain enabled.`);
+  }
+  if (sub === "idle" || sub === "autoff" || sub === "timeout") {
+    if (!isAdministrator(context)) return context.reply("Only server administrators can change AI auto-disable time.");
+    const raw = String(words[1] || "status").toLowerCase();
+    if (raw === "status" || raw === "show") {
+      if (aiIdleMinutes <= 0) return context.reply("AI auto-disable: off.");
+      return context.reply(`AI auto-disable: ${aiIdleMinutes} minute(s).`);
+    }
+    if (raw === "off" || raw === "disable" || raw === "none" || raw === "0") {
+      await Guild.updateOne(
+        { guildId: context.guildId },
+        { $set: { aiIdleMinutes: 0 } },
+        { upsert: true }
+      );
+      return context.reply("AI auto-disable disabled.");
+    }
+    const minutes = Number.parseInt(raw, 10);
+    if (!Number.isFinite(minutes) || minutes < AI_IDLE_MIN_MINUTES || minutes > AI_IDLE_MAX_MINUTES) {
+      return context.reply(`Use: \`ai idle <minutes>\` (0-${AI_IDLE_MAX_MINUTES}) | \`ai idle off\` | \`ai idle status\`.`);
+    }
+    await Guild.updateOne(
+      { guildId: context.guildId },
+      { $set: { aiIdleMinutes: minutes } },
+      { upsert: true }
+    );
+    if (minutes === 0) return context.reply("AI auto-disable disabled.");
+    return context.reply(`AI auto-disable set to ${minutes} minute(s).`);
   }
   if (sub === "personality") {
     const mode = String(words[1] || "").toLowerCase();
@@ -1339,7 +1384,8 @@ async function run(client, context) {
     const channels = currentAllowedChannels.length
       ? formatChannelList(currentAllowedChannels, context.guild)
       : "None";
-    return context.reply(`AI: ${status}${auto} • personality: ${personality} • language: ${language}\nChannels: ${channels}`);
+    const idleText = aiIdleMinutes <= 0 ? "off" : `${aiIdleMinutes}m`;
+    return context.reply(`AI: ${status}${auto} • personality: ${personality} • language: ${language} • auto-disable: ${idleText}\nChannels: ${channels}`);
   }
 
   if (!aiEnabled) {

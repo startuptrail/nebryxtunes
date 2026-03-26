@@ -12,6 +12,7 @@ const guildSchema = new mongoose.Schema({
   language: { type: String, default: "English" },
   aiEnabled: { type: Boolean, default: true },
   aiAutoDisabled: { type: Boolean, default: false },
+  aiIdleMinutes: { type: Number, default: 60, min: 0, max: 720 },
   aiAllowedChannelIds: { type: [String], default: [] },
   autoResponses: {
     type: [

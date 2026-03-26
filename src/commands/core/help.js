@@ -74,7 +74,7 @@ function getCommands() {
     { name: "auto", description: "Set a server auto response", category: "Settings", usage: "prefix: `!auto hello:hi there` | clear one: `!auto clear hello` | mention: `@Bot auto hello:hi there` | slash: `/auto response` or `/auto clear hello`", aliases: [] },
 
     { name: "dj", description: "Manage DJ role", category: "DJ", usage: "dj <set|remove>", aliases: ["djset", "djrm"] },
-    { name: "ai", description: "AI chat and moderation", category: "AI", usage: "ai <message|status|on|off|off all|personality|language|channel> | channel add/remove/list/clear", aliases: [] },
+    { name: "ai", description: "AI chat and moderation", category: "AI", usage: "ai <message|status|on|off|off all|personality|language|idle|channel> | idle <minutes|off|status> | channel add/remove/list/clear", aliases: [] },
     { name: "aimod", description: "AI moderation (optional command)", category: "AI", usage: "aimod <request>", aliases: ["modai", "mod"] }
   ];
 }
