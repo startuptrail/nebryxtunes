@@ -140,7 +140,7 @@ function getActivePlayers() {
   if (!players || typeof players.values !== "function") return [];
   const list = [];
   for (const p of players.values()) {
-    if (p && (p.playing || p.paused)) list.push(p);
+    if (p && p.current && (p.playing || p.paused)) list.push(p);
   }
   return list;
 }
@@ -284,7 +284,7 @@ async function scheduleIdleLeave(player) {
     const settings = await getTwentyFourSevenSettings(player.guildId);
     if (settings?.twentyFourSeven) return;
     if (!latest) return;
-    if (latest.playing || latest.paused) return;
+    if (latest.playing || (latest.paused && latest.current)) return;
     if (getQueueSize(latest) > 0) return;
     const vcId = latest.voiceChannel;
     const channel = vcId ? client.channels.cache.get(vcId) : null;
@@ -310,7 +310,7 @@ async function enterIdleState(player, delayMs = 500, trigger = "manual") {
     const latest = client.riffy.players.get(player.guildId);
     const ref = latest || player;
     if (!ref) return;
-    if (latest && (latest.playing || latest.paused)) return;
+    if (latest && (latest.playing || (latest.paused && latest.current))) return;
     if (latest && getQueueSize(latest) > 0) return;
     const settings = await getTwentyFourSevenSettings(ref.guildId);
     apply247StateToPlayer(ref, settings);

@@ -171,9 +171,12 @@ async function sendNowPlayingMessage(client, player) {
   if (!channelId) return;
   const channel = client.channels.cache.get(channelId);
   if (!channel || typeof channel.send !== "function") return;
-  const existingId = client.nowPlayingMessages?.get(player.guildId);
-  if (existingId && channel.messages?.fetch) {
-    const existing = await channel.messages.fetch(existingId).catch(() => null);
+  const existingEntry = client.nowPlayingMessages?.get(player.guildId);
+  const existingId = typeof existingEntry === "string" ? existingEntry : existingEntry?.messageId;
+  const existingChannelId = typeof existingEntry === "object" && existingEntry?.channelId ? existingEntry.channelId : channelId;
+  const existingChannel = client.channels.cache.get(existingChannelId) || channel;
+  if (existingId && existingChannel?.messages?.fetch) {
+    const existing = await existingChannel.messages.fetch(existingId).catch(() => null);
     if (existing) {
       await existing.edit(payload).catch(() => {});
       return;
@@ -182,7 +185,7 @@ async function sendNowPlayingMessage(client, player) {
   const sent = await channel.send(payload).catch(() => null);
   if (sent) {
     if (!client.nowPlayingMessages) client.nowPlayingMessages = new Map();
-    client.nowPlayingMessages.set(player.guildId, sent.id);
+    client.nowPlayingMessages.set(player.guildId, { channelId: channel.id, messageId: sent.id });
   }
 }
 
@@ -195,11 +198,14 @@ async function updateNowPlayingMessage(client, player, message) {
 }
 
 async function clearNowPlayingMessage(client, player) {
-  const channelId = player?.textChannel;
+  const entry = client.nowPlayingMessages?.get(player.guildId);
+  const savedChannelId = typeof entry === "object" ? entry?.channelId : null;
+  const savedMessageId = typeof entry === "object" ? entry?.messageId : entry;
+  const channelId = savedChannelId || player?.textChannel;
   if (!channelId) return;
   const channel = client.channels.cache.get(channelId);
   if (!channel || typeof channel.messages?.fetch !== "function") return;
-  const existingId = client.nowPlayingMessages?.get(player.guildId);
+  const existingId = savedMessageId;
   if (!existingId) return;
   const existing = await channel.messages.fetch(existingId).catch(() => null);
   if (existing) {
