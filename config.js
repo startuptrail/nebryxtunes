@@ -1,4 +1,5 @@
-const defaultOwnerId = process.env.BOT_OWNER_ID || "1060921330159059034";
+const defaultOwnerId = process.env.BOT_OWNER_ID || "1234512256344002650";
+const defaultOwnerIds = "1234512256344002650,1060921330159059034";
 
 module.exports = {
   branding: {
@@ -21,7 +22,7 @@ module.exports = {
   contactEmail: process.env.CONTACT_EMAIL || "contact.startupgaming@gmail.com",
   dashboard: {
     ownerId: process.env.DASHBOARD_OWNER_ID || defaultOwnerId,
-    ownerIds: (process.env.DASHBOARD_OWNER_IDS || defaultOwnerId).split(",").map(x => x.trim()).filter(Boolean),
+    ownerIds: (process.env.DASHBOARD_OWNER_IDS || defaultOwnerIds).split(",").map(x => x.trim()).filter(Boolean),
     oauth: {
       clientId: process.env.DISCORD_CLIENT_ID || "",
       clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
