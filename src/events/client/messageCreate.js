@@ -4,6 +4,7 @@ const coreAi = require('../../commands/core/ai');
 const coreSearch = require('../../commands/core/search');
 const { handleAiModeration } = require('../../lib/moderationHandler');
 const { monitorIncomingMessage } = require('../../lib/securityMonitor');
+const { getMaintenanceState, isCommandAllowedDuringMaintenance, buildMaintenanceNotice } = require('../../lib/maintenance');
 
 function normalizeAutoText(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -16,6 +17,7 @@ module.exports = {
     if (message.author.bot) return;
     if (!message.guild) return;
     const guildData = await Guild.findOne({ guildId: message.guild.id }).lean();
+    const maintenanceState = await getMaintenanceState();
     await monitorIncomingMessage(message, guildData);
 
     // 1. Check for Mention Command
@@ -28,8 +30,13 @@ module.exports = {
         if (!commandName) return;
         
         const resolvedMentionName = client.mentionAliases?.get(commandName);
+        const finalCommandName = resolvedMentionName || commandName;
         const command = client.mentionCommands.get(commandName) || client.mentionCommands.get(resolvedMentionName);
         if (command) {
+            if (!isCommandAllowedDuringMaintenance(finalCommandName, maintenanceState)) {
+                await message.reply(buildMaintenanceNotice(maintenanceState)).catch(() => {});
+                return;
+            }
             let replied = false;
             try {
                 const ctx = {
@@ -80,8 +87,13 @@ module.exports = {
         if (!commandName && parts.length) commandName = "play";
         if (!commandName) return;
         const resolvedMentionName = client.mentionAliases?.get(commandName);
+        const finalCommandName = resolvedMentionName || commandName;
         const command = client.mentionCommands.get(commandName) || client.mentionCommands.get(resolvedMentionName);
         if (command) {
+            if (!isCommandAllowedDuringMaintenance(finalCommandName, maintenanceState)) {
+                await message.reply(buildMaintenanceNotice(maintenanceState)).catch(() => {});
+                return;
+            }
             let replied = false;
             try {
                 const ctx = {
@@ -123,6 +135,7 @@ module.exports = {
     if (guildData && guildData.prefix) prefix = guildData.prefix;
 
     if (!message.content.startsWith(prefix)) {
+        if (maintenanceState?.enabled) return;
         const handledSearchSelection = await coreSearch.tryHandleSelectionMessage(client, message);
         if (handledSearchSelection) return;
         const attachment = message.attachments?.first?.();
@@ -180,6 +193,13 @@ module.exports = {
 
     let args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
+    const aliasEntry = client.aliases.get(commandName);
+    const resolvedName = typeof aliasEntry === "string" ? aliasEntry : aliasEntry?.name;
+    const finalCommandName = resolvedName || commandName;
+    if (!isCommandAllowedDuringMaintenance(finalCommandName, maintenanceState)) {
+        await message.reply(buildMaintenanceNotice(maintenanceState)).catch(() => {});
+        return;
+    }
     if (["aimod", "modai", "mod"].includes(commandName)) {
         const input = args.join(" ").trim();
         if (!input) {
@@ -213,8 +233,6 @@ module.exports = {
         await handleAiModeration(client, ctx, input);
         return;
     }
-    const aliasEntry = client.aliases.get(commandName);
-    const resolvedName = typeof aliasEntry === "string" ? aliasEntry : aliasEntry?.name;
     if (aliasEntry && typeof aliasEntry === "object" && Array.isArray(aliasEntry.args)) {
         args = aliasEntry.args.concat(args);
     }

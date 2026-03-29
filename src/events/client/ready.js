@@ -26,8 +26,8 @@ module.exports = {
           guilds.map(guild => rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: client.slashDatas }))
         );
         console.log(`Guild slash commands registered for ${guilds.length} guild(s).`);
-        await rest.put(Routes.applicationCommands(client.user.id), { body: client.slashDatas });
-        console.log("Global slash commands registered.");
+        await rest.put(Routes.applicationCommands(client.user.id), { body: [] });
+        console.log("Global slash commands cleared to prevent duplicates.");
       }
     } catch (error) {
       console.error("Slash command registration error:", error);

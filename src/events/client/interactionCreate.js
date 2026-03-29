@@ -6,6 +6,7 @@ const coreLyrics = require("../../commands/core/lyrics");
 const coreHelp = require("../../commands/core/help");
 const coreUpdates = require("../../commands/core/updates");
 const Guild = require("../../database/models/Guild");
+const { getMaintenanceState, isCommandAllowedDuringMaintenance, buildMaintenanceNotice } = require("../../lib/maintenance");
 
 module.exports = {
   name: 'interactionCreate',
@@ -19,6 +20,10 @@ module.exports = {
       return { content, ephemeral: true };
     };
     if (interaction.isButton()) {
+      const maintenanceState = await getMaintenanceState();
+      if (maintenanceState?.enabled && interaction.customId && interaction.customId.startsWith("np_")) {
+        return interaction.reply({ content: buildMaintenanceNotice(maintenanceState), ephemeral: true }).catch(() => {});
+      }
       if (interaction.customId === "ai_reactivate") {
         const member = interaction.member;
         const canManage = member?.permissions?.has?.(PermissionsBitField.Flags.ManageGuild)
@@ -226,6 +231,11 @@ module.exports = {
     }
 
     if (!interaction.isChatInputCommand()) return;
+
+    const maintenanceState = await getMaintenanceState();
+    if (!isCommandAllowedDuringMaintenance(interaction.commandName, maintenanceState)) {
+      return interaction.reply({ content: buildMaintenanceNotice(maintenanceState), ephemeral: true }).catch(() => {});
+    }
 
     const command = client.slashCommands.get(interaction.commandName);
 
