@@ -105,7 +105,7 @@ const MUSIC_HINT_RE = /\b(song|music|track|album|artist|youtube|yt|listen|play)\
 const LICENSE_TEXT = [
   "MIT License",
   "",
-  "Copyright (c) 2026 Not Flexxy",
+  "Copyright (c) 2026 StartupGaming",
   "",
   "Permission is hereby granted, free of charge, to any person obtaining a copy",
   "of this software and associated documentation files (the \"Software\"), to deal",
@@ -126,11 +126,11 @@ const LICENSE_TEXT = [
   "SOFTWARE."
 ].join("\n");
 
-const BOT_OWNER_REPLY = "This bot is owned, developed, and maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
-const BOT_CREATOR_REPLY = "This bot was created by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
-const BOT_DEVELOPER_REPLY = "This bot is developed and improved by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
-const BOT_MAINTAINER_REPLY = "This bot is maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
-const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI is OpenAI, while the bot itself is owned, developed, and maintained by Bot Dev Team (Pranav), Owner And Provider (Not Flexxy!).";
+const BOT_OWNER_REPLY = "This bot is owned by Notflexxy#0000, and the provider, developer, and maintainer is StartupGaming.";
+const BOT_CREATOR_REPLY = "This bot was created by StartupGaming.";
+const BOT_DEVELOPER_REPLY = "This bot is developed and improved by StartupGaming.";
+const BOT_MAINTAINER_REPLY = "This bot is maintained by StartupGaming.";
+const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI is OpenAI, while the bot itself is owned by Notflexxy#0000, and bot provider owner, developer, and maintainer is StartupGaming.";
 
 const ATTRIBUTION_PATTERNS = [
   {
@@ -140,6 +140,18 @@ const ATTRIBUTION_PATTERNS = [
       "licence",
       "your license",
       "what is your license",
+      "what is ur license",
+      "what's your license",
+      "whats your license",
+      "can u gimme ur license",
+      "can you give me your license",
+      "can i get your license",
+      "gimme your license",
+      "give me your license",
+      "show license",
+      "send license",
+      "license please",
+      "licence please",
       "what license",
       "license of bot",
       "bot license"

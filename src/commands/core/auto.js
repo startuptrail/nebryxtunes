@@ -32,6 +32,11 @@ function hasAutoAccess(context) {
   return isOwner || isAdmin;
 }
 
+function hasGlobalOwnerAccess(context) {
+  const userId = String(context?.userId || "");
+  return getOwnerIds().has(userId);
+}
+
 function getSubcommand(context) {
   const raw =
     context?.interaction?.options?.getSubcommand?.(false) ||
@@ -82,7 +87,7 @@ async function saveResponse(context, trigger, reply) {
   const responses = getAutoResponses(doc);
   const normalized = normalize(trigger);
   const next = responses.filter(item => normalize(item.trigger) !== normalized);
-  next.push({ trigger, reply });
+  next.push({ guildId: String(context.guildId), trigger, reply });
   await Guild.updateOne(
     { guildId: context.guildId },
     {
@@ -133,6 +138,52 @@ async function clearResponses(context, trigger) {
   return { cleared: "selected", count: responses.length - next.length };
 }
 
+function stampGuildIdOnResponses(doc, fallbackGuildId) {
+  const responses = Array.isArray(doc?.autoResponses) ? doc.autoResponses : [];
+  if (!responses.length) return { next: responses, changed: 0 };
+  const guildId = String(doc?.guildId || fallbackGuildId || "");
+  let changed = 0;
+  const next = responses.map((item) => {
+    if (!item || !item.trigger || !item.reply) return item;
+    const current = item?.guildId ? String(item.guildId) : "";
+    if (current) return item;
+    changed += 1;
+    return { ...item, guildId };
+  });
+  return { next, changed };
+}
+
+async function migrateCurrentGuildResponses(context) {
+  const doc = await Guild.findOne({ guildId: context.guildId }).lean();
+  if (!doc) return { docsUpdated: 0, responsesStamped: 0 };
+  const { next, changed } = stampGuildIdOnResponses(doc, context.guildId);
+  if (!changed) return { docsUpdated: 0, responsesStamped: 0 };
+  await Guild.updateOne(
+    { guildId: context.guildId },
+    { $set: { autoResponses: next } },
+    { upsert: false }
+  );
+  return { docsUpdated: 1, responsesStamped: changed };
+}
+
+async function migrateAllGuildResponses() {
+  const docs = await Guild.find({ "autoResponses.0": { $exists: true } }).lean();
+  let docsUpdated = 0;
+  let responsesStamped = 0;
+  for (const doc of docs) {
+    const { next, changed } = stampGuildIdOnResponses(doc, doc?.guildId);
+    if (!changed) continue;
+    await Guild.updateOne(
+      { guildId: doc.guildId },
+      { $set: { autoResponses: next } },
+      { upsert: false }
+    );
+    docsUpdated += 1;
+    responsesStamped += changed;
+  }
+  return { docsUpdated, responsesStamped };
+}
+
 async function run(client, context) {
   if (!context?.guildId) return context.reply("Use this in a server.");
   if (!hasAutoAccess(context)) return context.reply("Only the server owner or an administrator can use this command.");
@@ -153,6 +204,21 @@ async function run(client, context) {
     return context.reply(result.count > 0 ? "Selected auto response cleared." : "No matching auto response found.");
   }
 
+  if (sub === "migrate") {
+    const scope = String(context?.interaction?.isChatInputCommand?.()
+      ? context.options?.scope || "current"
+      : context?.args?.[1] || "current").trim().toLowerCase();
+    if (scope === "all") {
+      if (!hasGlobalOwnerAccess(context)) {
+        return context.reply("Only bot owners can run `!auto migrate all`.");
+      }
+      const result = await migrateAllGuildResponses();
+      return context.reply(`Migration complete (all servers). Updated docs: ${result.docsUpdated}, stamped responses: ${result.responsesStamped}.`);
+    }
+    const result = await migrateCurrentGuildResponses(context);
+    return context.reply(`Migration complete (this server). Updated docs: ${result.docsUpdated}, stamped responses: ${result.responsesStamped}.`);
+  }
+
   if (sub === "response" || sub === "set" || sub === "add") {
     const { trigger, reply } = getResponseParts(context, sub);
     if (!trigger) return context.reply("Provide a trigger.");
@@ -166,7 +232,7 @@ async function run(client, context) {
     ].join("\n"));
   }
 
-  if (sub && !["show", "clear", "remove", "off", "disable", "response", "set", "add"].includes(sub)) {
+  if (sub && !["show", "clear", "remove", "off", "disable", "response", "set", "add", "migrate"].includes(sub)) {
     const { trigger, reply } = getResponseParts(context, "");
     if (!trigger || !reply) {
       return context.reply("Use `!auto hello:hi there`, `@Bot auto hello:hi there`, or `/auto response`.");

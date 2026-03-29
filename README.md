@@ -82,7 +82,7 @@ Security monitoring:
 
 This project is licensed under the MIT License.
 
-Copyright (c) 2026 Not Flexxy
+Copyright (c) 2026 StartupGaming
 
 ## Commands (summary)
 
@@ -96,5 +96,5 @@ Copyright (c) 2026 Not Flexxy
 - **Info:** lyrics, songinfo, ping, uptime, stats, help
 - **DJ:** dj set, dj remove
 
-Developed by `Not Flexxy`
+Developed by `StartupGaming`
 Contact: contact.startupgaming@gmail.com

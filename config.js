@@ -3,7 +3,7 @@ const defaultOwnerId = process.env.BOT_OWNER_ID || "1060921330159059034";
 module.exports = {
   branding: {
     botName: process.env.BOT_NAME || "NebryxTunes",
-    ownerName: process.env.BOT_OWNER_NAME || "Not Flexxy",
+    ownerName: process.env.BOT_OWNER_NAME || "StartupGaming",
     ownerId: defaultOwnerId
   },
   token: process.env.DISCORD_TOKEN || "",

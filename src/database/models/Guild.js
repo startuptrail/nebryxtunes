@@ -17,6 +17,7 @@ const guildSchema = new mongoose.Schema({
   autoResponses: {
     type: [
       {
+        guildId: { type: String, default: null },
         trigger: { type: String, required: true },
         reply: { type: String, required: true }
       }

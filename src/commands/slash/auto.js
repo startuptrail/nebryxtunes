@@ -21,6 +21,21 @@ const data = new SlashCommandBuilder()
       .setName("clear")
       .setDescription("Clear the current auto response")
       .addStringOption(o => o.setName("trigger").setDescription("Remove only this trigger").setRequired(false))
+  )
+  .addSubcommand(sub =>
+    sub
+      .setName("migrate")
+      .setDescription("Stamp missing guildId on older auto responses")
+      .addStringOption(o =>
+        o
+          .setName("scope")
+          .setDescription("Migration scope")
+          .addChoices(
+            { name: "Current server", value: "current" },
+            { name: "All servers (bot owner only)", value: "all" }
+          )
+          .setRequired(false)
+      )
   );
 
 module.exports = {

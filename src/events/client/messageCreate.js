@@ -128,18 +128,22 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
-        const allowedAiChannels = Array.isArray(guildData?.aiAllowedChannelIds) ? guildData.aiAllowedChannelIds.map(String).filter(Boolean) : [];
-        if (!allowedAiChannels.length || !allowedAiChannels.includes(String(message.channel.id))) return;
         const responses = Array.isArray(guildData?.autoResponses) && guildData.autoResponses.length
             ? guildData.autoResponses
             : (guildData?.autoResponseEnabled && guildData?.autoResponseTrigger && guildData?.autoResponseText
                 ? [{ trigger: guildData.autoResponseTrigger, reply: guildData.autoResponseText }]
                 : []);
-        const matched = responses.find(item => normalizeAutoText(content) === normalizeAutoText(item?.trigger));
+        const matched = responses.find(item => {
+            const responseGuildId = item?.guildId ? String(item.guildId) : null;
+            if (responseGuildId && responseGuildId !== String(message.guild.id)) return false;
+            return normalizeAutoText(content) === normalizeAutoText(item?.trigger);
+        });
         if (matched?.reply) {
             await message.channel.send({ content: String(matched.reply).trim(), allowedMentions: { repliedUser: false } }).catch(() => {});
             return;
         }
+        const allowedAiChannels = Array.isArray(guildData?.aiAllowedChannelIds) ? guildData.aiAllowedChannelIds.map(String).filter(Boolean) : [];
+        if (!allowedAiChannels.length || !allowedAiChannels.includes(String(message.channel.id))) return;
         const ctx = {
             guildId: message.guild.id,
             member: message.member,
