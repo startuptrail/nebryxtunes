@@ -5,6 +5,7 @@ const coreSearch = require('../../commands/core/search');
 const { handleAiModeration } = require('../../lib/moderationHandler');
 const { monitorIncomingMessage } = require('../../lib/securityMonitor');
 const { getMaintenanceState, isCommandAllowedDuringMaintenance, buildMaintenanceNotice } = require('../../lib/maintenance');
+const { getGlobalAutoResponses } = require('../../lib/globalAuto');
 
 function normalizeAutoText(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -141,7 +142,7 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
-        const globalResponses = Array.isArray(guildData?.globalAutoResponses) ? guildData.globalAutoResponses : [];
+        const globalResponses = await getGlobalAutoResponses();
         const matchedGlobal = globalResponses.find(item => normalizeAutoText(content) === normalizeAutoText(item?.trigger));
         if (matchedGlobal?.reply) {
             await message.channel.send({ content: String(matchedGlobal.reply).trim(), allowedMentions: { repliedUser: false } }).catch(() => {});

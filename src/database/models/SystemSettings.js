@@ -2,6 +2,15 @@ const mongoose = require("mongoose");
 
 const systemSettingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: "global" },
+  globalAutoResponses: {
+    type: [
+      {
+        trigger: { type: String, required: true },
+        reply: { type: String, required: true }
+      }
+    ],
+    default: []
+  },
   maintenance: {
     enabled: { type: Boolean, default: false },
     downtime: { type: String, default: "Unknown" },

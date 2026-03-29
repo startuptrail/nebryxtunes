@@ -74,7 +74,7 @@ function getCommands() {
     { name: "help", description: "Show help menu", category: "Info", usage: "help [category|command]", aliases: ["h"] },
     { name: "prefix", description: "View or change prefix", category: "Settings", usage: "prefix [newPrefix]", aliases: [] },
     { name: "auto", description: "Set and manage server auto responses", category: "Settings", usage: "auto show | auto <trigger>:<reply> | auto clear [trigger] | auto migrate [current|all]", aliases: [] },
-    { name: "autoglobal", description: "Owner-only auto response for all channels", category: "Settings", usage: "autoglobal show | autoglobal <trigger>:<reply> | autoglobal clear [trigger] | /autoglobal response", aliases: ["agauto", "gauto"] },
+    { name: "autoglobal", description: "Owner-only auto response for all servers and all channels", category: "Settings", usage: "autoglobal show | autoglobal <trigger>:<reply> | autoglobal clear [trigger] | /autoglobal response", aliases: ["agauto", "gauto"] },
 
     { name: "dj", description: "Manage DJ role", category: "DJ", usage: "dj <set|remove>", aliases: ["djset", "djrm"] },
     { name: "ai", description: "AI chat and moderation", category: "AI", usage: "ai <message|status|on|off|off all|personality|language|idle|channel> | idle <minutes|off|status> | channel add/remove/list/clear", aliases: [] },
