@@ -49,6 +49,7 @@ const ping = require("./ping");
 const uptime = require("./uptime");
 const stats = require("./stats");
 const help = require("./help");
+const updates = require("./updates");
 const dj = require("./dj");
 
 module.exports = {
@@ -93,5 +94,6 @@ module.exports = {
   uptime,
   stats,
   help,
+  updates,
   dj
 };

@@ -69,6 +69,8 @@ function getCommands() {
     { name: "ping", description: "Show bot latency", category: "Info", usage: "ping", aliases: ["ping"] },
     { name: "uptime", description: "Show bot uptime", category: "Info", usage: "uptime", aliases: ["up"] },
     { name: "stats", description: "Show bot stats", category: "Info", usage: "stats", aliases: ["stats"] },
+    { name: "updates", description: "Show bot update versions and changelog", category: "Info", usage: "updates [latest|v3|v2|v1|maintenance]", aliases: ["changelog", "news"] },
+    { name: "maintance", description: "Post maintenance notice (bot owner only, slash)", category: "Info", usage: "/maintance downtime:<time>", aliases: [] },
     { name: "help", description: "Show help menu", category: "Info", usage: "help [category|command]", aliases: ["h"] },
     { name: "prefix", description: "View or change prefix", category: "Settings", usage: "prefix [newPrefix]", aliases: [] },
     { name: "auto", description: "Set and manage server auto responses", category: "Settings", usage: "auto show | auto <trigger>:<reply> | auto clear [trigger] | auto migrate [current|all]", aliases: [] },

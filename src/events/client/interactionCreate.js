@@ -4,6 +4,7 @@ const coreQueue = require("../../commands/core/queue");
 const coreSkip = require("../../commands/core/skip");
 const coreLyrics = require("../../commands/core/lyrics");
 const coreHelp = require("../../commands/core/help");
+const coreUpdates = require("../../commands/core/updates");
 const Guild = require("../../database/models/Guild");
 
 module.exports = {
@@ -51,6 +52,11 @@ module.exports = {
           return interaction.update(payload).catch(() => {});
         }
         return;
+      }
+      if (interaction.customId && interaction.customId.startsWith("updates_view:")) {
+        const view = String(interaction.customId.split(":")[1] || "latest").trim().toLowerCase();
+        const payload = coreUpdates.buildPayload(view);
+        return interaction.update(payload).catch(() => {});
       }
       if (!interaction.customId || !interaction.customId.startsWith("np_")) return;
       const voiceCheck = requireVoice({ member: interaction.member });
