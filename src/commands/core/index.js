@@ -50,6 +50,7 @@ const uptime = require("./uptime");
 const stats = require("./stats");
 const help = require("./help");
 const updates = require("./updates");
+const autoglobal = require("./autoglobal");
 const dj = require("./dj");
 
 module.exports = {
@@ -95,5 +96,6 @@ module.exports = {
   stats,
   help,
   updates,
+  autoglobal,
   dj
 };

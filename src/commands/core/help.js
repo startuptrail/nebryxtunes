@@ -70,10 +70,11 @@ function getCommands() {
     { name: "uptime", description: "Show bot uptime", category: "Info", usage: "uptime", aliases: ["up"] },
     { name: "stats", description: "Show bot stats", category: "Info", usage: "stats", aliases: ["stats"] },
     { name: "updates", description: "Show bot update versions and changelog", category: "Info", usage: "updates [latest|v3|v2|v1|maintenance]", aliases: ["changelog", "news"] },
-    { name: "maintance", description: "Post maintenance notice (bot owner only, slash)", category: "Info", usage: "/maintance downtime:<time>", aliases: [] },
+    { name: "maintance", description: "Post maintenance notice (bot owner only)", category: "Info", usage: "maintance <downtime> | @Bot maintance <downtime> | /maintance downtime:<time>", aliases: ["maintenance"] },
     { name: "help", description: "Show help menu", category: "Info", usage: "help [category|command]", aliases: ["h"] },
     { name: "prefix", description: "View or change prefix", category: "Settings", usage: "prefix [newPrefix]", aliases: [] },
     { name: "auto", description: "Set and manage server auto responses", category: "Settings", usage: "auto show | auto <trigger>:<reply> | auto clear [trigger] | auto migrate [current|all]", aliases: [] },
+    { name: "autoglobal", description: "Owner-only auto response for all channels", category: "Settings", usage: "autoglobal show | autoglobal <trigger>:<reply> | autoglobal clear [trigger] | /autoglobal response", aliases: ["agauto", "gauto"] },
 
     { name: "dj", description: "Manage DJ role", category: "DJ", usage: "dj <set|remove>", aliases: ["djset", "djrm"] },
     { name: "ai", description: "AI chat and moderation", category: "AI", usage: "ai <message|status|on|off|off all|personality|language|idle|channel> | idle <minutes|off|status> | channel add/remove/list/clear", aliases: [] },

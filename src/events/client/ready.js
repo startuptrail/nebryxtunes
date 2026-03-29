@@ -23,11 +23,11 @@ module.exports = {
       if (client.slashDatas && client.slashDatas.length > 0) {
         const guilds = [...client.guilds.cache.values()];
         await Promise.allSettled(
-          guilds.map(guild => rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: [] }))
+          guilds.map(guild => rest.put(Routes.applicationGuildCommands(client.user.id, guild.id), { body: client.slashDatas }))
         );
-        console.log(`Cleared guild slash commands for ${guilds.length} guild(s).`);
+        console.log(`Guild slash commands registered for ${guilds.length} guild(s).`);
         await rest.put(Routes.applicationCommands(client.user.id), { body: client.slashDatas });
-        console.log("Slash commands registered.");
+        console.log("Global slash commands registered.");
       }
     } catch (error) {
       console.error("Slash command registration error:", error);

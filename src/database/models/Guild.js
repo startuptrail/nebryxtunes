@@ -27,6 +27,15 @@ const guildSchema = new mongoose.Schema({
   autoResponseEnabled: { type: Boolean, default: false },
   autoResponseTrigger: { type: String, default: null },
   autoResponseText: { type: String, default: null },
+  globalAutoResponses: {
+    type: [
+      {
+        trigger: { type: String, required: true },
+        reply: { type: String, required: true }
+      }
+    ],
+    default: []
+  },
   dashboard: {
     nsfwMonitorEnabled: { type: Boolean, default: true },
     nsfwBlockMode: { type: Boolean, default: false },

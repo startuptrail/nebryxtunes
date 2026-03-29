@@ -128,6 +128,12 @@ module.exports = {
         const attachment = message.attachments?.first?.();
         const autoMessage = content || (attachment ? `Attachment: ${attachment.url}` : "");
         if (!autoMessage) return;
+        const globalResponses = Array.isArray(guildData?.globalAutoResponses) ? guildData.globalAutoResponses : [];
+        const matchedGlobal = globalResponses.find(item => normalizeAutoText(content) === normalizeAutoText(item?.trigger));
+        if (matchedGlobal?.reply) {
+            await message.channel.send({ content: String(matchedGlobal.reply).trim(), allowedMentions: { repliedUser: false } }).catch(() => {});
+            return;
+        }
         const responses = Array.isArray(guildData?.autoResponses) && guildData.autoResponses.length
             ? guildData.autoResponses
             : (guildData?.autoResponseEnabled && guildData?.autoResponseTrigger && guildData?.autoResponseText
