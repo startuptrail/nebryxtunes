@@ -54,6 +54,7 @@ client.guildPrefixes = new Map();
 client.nowPlayingMessages = new Map();
 client.previousTracks = new Map();
 client.idleTimeouts = new Map();
+client.idleNoticeAt = new Map();
 client.lastCommandChannel = new Map();
 client.presenceInterval = null;
 client.presenceIndex = 0;
@@ -168,6 +169,14 @@ function clearIdleTimeout(guildId) {
   const t = client.idleTimeouts.get(guildId);
   if (t) clearTimeout(t);
   client.idleTimeouts.delete(guildId);
+}
+
+function canSendIdleNotice(guildId, cooldownMs = 15000) {
+  const now = Date.now();
+  const last = client.idleNoticeAt.get(guildId) || 0;
+  if (now - last < cooldownMs) return false;
+  client.idleNoticeAt.set(guildId, now);
+  return true;
 }
 
 async function getTwentyFourSevenSettings(guildId) {
@@ -325,7 +334,7 @@ async function enterIdleState(player, delayMs = 500, trigger = "manual") {
     }
     const textChannelId = client.lastCommandChannel?.get(ref.guildId) || ref.textChannel;
     const textChannel = textChannelId ? client.channels.cache.get(textChannelId) : null;
-    if (trigger === "auto" && textChannel && typeof textChannel.send === "function") {
+    if (trigger === "auto" && textChannel && typeof textChannel.send === "function" && canSendIdleNotice(ref.guildId)) {
       await textChannel.send("ℹ️ Music Ended, Im leaving Soon from VC!").catch(() => {});
     }
     await clearNowPlayingMessage(client, ref);
@@ -422,7 +431,7 @@ client.riffy.on("trackEnd", (player, track) => {
   list.push(track);
   if (list.length > 20) list.shift();
   client.previousTracks.set(player.guildId, list);
-  enterIdleState(player, 500, "auto");
+  // queueEnd/trackError handlers should decide idle flow; avoid false idle transitions between tracks
 });
 
 client.riffy.on("queueEnd", (player) => enterIdleState(player, 200, "auto"));

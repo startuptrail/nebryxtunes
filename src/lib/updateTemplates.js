@@ -12,7 +12,8 @@ const RELEASE_TEMPLATES = {
     fixes: [
       "Fixed auto trigger being blocked by AI-only channel checks.",
       "Improved AI channel/idle control flow.",
-      "Reduced false auto behavior across servers with guild-bound matching."
+      "Reduced false auto behavior across servers with guild-bound matching.",
+      "Fixed music auto-idle race that could end playback/leave flow right after using play."
     ],
     changes: [
       "Updated help text for auto command usage.",
