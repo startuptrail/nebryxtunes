@@ -32,6 +32,7 @@ function getCommands() {
     { name: "nowplaying", description: "Show now playing", category: "Music", usage: "nowplaying", aliases: ["np"] },
     { name: "search", description: "Search for tracks", category: "Music", usage: "search <query>", aliases: ["sr"] },
     { name: "request", description: "Request a track", category: "Music", usage: "request <query>", aliases: ["req"] },
+    { name: "hype", description: "Hype the currently playing song", category: "Music", usage: "hype", aliases: [] },
     { name: "voteskip", description: "Vote to skip", category: "Music", usage: "voteskip", aliases: ["vs"] },
 
     { name: "queue", description: "Show the queue", category: "Queue", usage: "queue [page]", aliases: ["q", "qp"] },

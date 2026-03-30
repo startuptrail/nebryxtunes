@@ -2,6 +2,7 @@ const { PermissionsBitField } = require("discord.js");
 const { requireVoice, requirePlayer, updateNowPlayingMessage, clearNowPlayingMessage } = require("../../lib/playerHelpers");
 const coreQueue = require("../../commands/core/queue");
 const coreSkip = require("../../commands/core/skip");
+const coreHype = require("../../commands/core/hype");
 const coreLyrics = require("../../commands/core/lyrics");
 const coreHelp = require("../../commands/core/help");
 const coreUpdates = require("../../commands/core/updates");
@@ -208,6 +209,24 @@ module.exports = {
               interaction
             };
             await coreLyrics.run(client, ctx);
+            break;
+          }
+          case "np_hype": {
+            const ctx = {
+              guildId: interaction.guildId,
+              member: interaction.member,
+              args: [],
+              options: {},
+              reply: async (content) => respond(content),
+              author: interaction.user,
+              user: interaction.user,
+              userId: interaction.user.id,
+              channel: interaction.channel,
+              channelId: interaction.channelId,
+              guild: interaction.guild,
+              interaction
+            };
+            await coreHype.run(client, ctx);
             break;
           }
           default:

@@ -31,6 +31,7 @@ const move = require("./move");
 
 const loop = require("./loop");
 const autoplay = require("./autoplay");
+const hype = require("./hype");
 const twentyFourSeven = require("./twentyFourSeven");
 
 const playlistCreate = require("./playlistCreate");
@@ -79,6 +80,7 @@ module.exports = {
   move,
   loop,
   autoplay,
+  hype,
   twentyFourSeven,
   playlistCreate,
   playlistAdd,

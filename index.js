@@ -6,6 +6,7 @@ const pkg = require("./package.json");
 const { connect } = require("./src/database/connect");
 const { sendNowPlayingMessage, clearNowPlayingMessage } = require("./src/lib/playerHelpers");
 const Guild = require("./src/database/models/Guild");
+const { pickTrackByHype } = require("./src/lib/hypeService");
 const { startDashboardServer } = require("./src/dashboard/server");
 const { apply247StateToPlayer, normalize247Mode } = require("./src/lib/twentyFourSeven");
 const { getBotName } = require("./src/lib/branding");
@@ -265,7 +266,11 @@ async function tryTwentyFourSevenAutoplay(player, settings) {
           if (title && seedTitle && title === seedTitle) return false;
           return true;
         });
-        const nextTrack = candidates[Math.floor(Math.random() * Math.min(candidates.length, 5))] || candidates[0] || tracks[0];
+        const pool = candidates.slice(0, 15);
+        const nextTrack = await pickTrackByHype(player.guildId, pool)
+          || pool[Math.floor(Math.random() * Math.min(pool.length, 5))]
+          || pool[0]
+          || tracks[0];
         if (!nextTrack) continue;
         if (nextTrack.info) nextTrack.info.requester = client.user;
         player.queue.add(nextTrack);

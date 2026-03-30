@@ -160,6 +160,7 @@ function buildNowPlayingPayload(client, player) {
   );
 
   const row3 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("np_hype").setEmoji("🌟").setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId("np_lyrics").setEmoji("📝").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("np_clear").setEmoji("🗑️").setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setLabel("Support").setStyle(ButtonStyle.Link).setURL(supportUrl)

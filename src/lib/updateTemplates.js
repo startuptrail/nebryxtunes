@@ -7,7 +7,8 @@ const RELEASE_TEMPLATES = {
     features: [
       "✨ Auto responses now work without AI mode/channel.",
       "🎧 Auto responses are now server-scoped only.",
-      "⚡ Added auto-response migration commands for old data."
+      "⚡ Added auto-response migration commands for old data.",
+      "🌟 Added song Hype system (`/hype`, `!hype`, mention `hype`) with now-playing star button."
     ],
     fixes: [
       "Fixed auto trigger being blocked by AI-only channel checks.",
@@ -17,7 +18,8 @@ const RELEASE_TEMPLATES = {
     ],
     changes: [
       "Updated help text for auto command usage.",
-      "Tweaked update panel with version buttons and templates."
+      "Tweaked update panel with version buttons and templates.",
+      "24/7 autoplay now gives higher pick chance to tracks with higher Hype score."
     ],
     notes: "Run `!auto migrate all` once after restart (owner account).",
     cta: "`/updates` or `!updates`",
