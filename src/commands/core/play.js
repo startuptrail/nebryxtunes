@@ -51,7 +51,16 @@ async function run(client, context) {
   const { query, source, isUrl } = parseQuery(rawQuery);
   if (!query) return context.reply("❌ Provide a search query or URL.");
 
-  const player = getOrCreatePlayer(client, context.guildId, voice.voiceChannelId, context.channelId, true);
+  let player;
+  try {
+    player = getOrCreatePlayer(client, context.guildId, voice.voiceChannelId, context.channelId, true);
+  } catch (error) {
+    if (isNodeUnavailableError(error)) {
+      return context.reply("❌ Lavalink not ready. Try again in a moment.");
+    }
+    console.error("[PLAY] player create error:", error?.message || error);
+    return context.reply("❌ Could not connect to music node right now. Try again in a moment.");
+  }
   const requester = context.interaction?.user ?? context.message?.author;
 
   let resolve;
