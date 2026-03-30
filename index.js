@@ -350,12 +350,8 @@ async function enterIdleState(player, delayMs = 500, trigger = "manual") {
 
 async function handleTrackFailure(player, payload, kind = "error") {
   if (!player) return;
-  const textChannelId = client.lastCommandChannel?.get(player.guildId) || player.textChannel;
-  const textChannel = textChannelId ? client.channels.cache.get(textChannelId) : null;
   const reason = String(payload?.exception?.message || payload?.error || payload?.cause || payload?.reason || kind).slice(0, 180);
-  if (textChannel?.send) {
-    await textChannel.send(`⚠️ Playback ${kind}. ${reason}`).catch(() => {});
-  }
+  console.warn(`[PLAYBACK ${kind.toUpperCase()}] guild=${player.guildId} reason=${reason}`);
 
   // Riffy stops on trackError/trackStuck and does not auto-advance; move to next track if available.
   if (getQueueSize(player) > 0) {
