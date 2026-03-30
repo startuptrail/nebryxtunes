@@ -14,12 +14,14 @@ const RELEASE_TEMPLATES = {
       "Fixed auto trigger being blocked by AI-only channel checks.",
       "Improved AI channel/idle control flow.",
       "Reduced false auto behavior across servers with guild-bound matching.",
-      "Fixed music auto-idle race that could end playback/leave flow right after using play."
+      "Fixed music auto-idle race that could end playback/leave flow right after using play.",
+      "Improved play command error handling when Lavalink/node is not ready."
     ],
     changes: [
       "Updated help text for auto command usage.",
       "Tweaked update panel with version buttons and templates.",
-      "24/7 autoplay now gives higher pick chance to tracks with higher Hype score."
+      "24/7 autoplay now gives higher pick chance to tracks with higher Hype score.",
+      "Playback extraction errors are now logged internally instead of spamming channel messages."
     ],
     notes: "Run `!auto migrate all` once after restart (owner account).",
     cta: "`/updates` or `!updates`",
