@@ -130,7 +130,7 @@ const BOT_OWNER_REPLY = "This bot is owned by Notflexxy#0000, and the provider, 
 const BOT_CREATOR_REPLY = "This bot was created by StartupGaming.";
 const BOT_DEVELOPER_REPLY = "This bot is developed and improved by StartupGaming.";
 const BOT_MAINTAINER_REPLY = "This bot is maintained by StartupGaming.";
-const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI is OpenAI, while the bot itself is owned by Notflexxy#0000, and bot provider owner, developer, and maintainer is StartupGaming.";
+const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI stack is Qwen via Groq, while the bot itself is owned by Notflexxy#0000, and bot provider owner, developer, and maintainer is StartupGaming.";
 
 const ATTRIBUTION_PATTERNS = [
   {
@@ -209,7 +209,7 @@ const ATTRIBUTION_PATTERNS = [
       "organisation",
       "company",
       "company behind you",
-      "openai",
+      "qwen",
       "who is your organization",
       "what is your organization",
       "which organization",
@@ -284,7 +284,7 @@ function getAiConfig() {
   return {
     provider: "groq",
     apiKey: String(cfg.apiKey || "").trim(),
-    model: String(cfg.model || "openai/gpt-oss-20b").trim()
+    model: String(cfg.model || "qwen/qwen3-32b").trim()
   };
 }
 
@@ -306,7 +306,7 @@ function buildPrompt({ message, personality, language, canModerate, allowModerat
     "If the user confirms with short words like yes/yeah/ok and a song was just discussed, return PLAY for that song.",
     `If the user asks about the creator, reply exactly: ${BOT_CREATOR_REPLY}`,
     `If the user asks about the developer, reply exactly: ${BOT_DEVELOPER_REPLY}`,
-    `If the user asks about the organization behind the bot or OpenAI, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
+    `If the user asks about the organization behind the bot or Qwen, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
     `If the user asks about the maintainer, reply exactly: ${BOT_MAINTAINER_REPLY}`,
     `If the user asks about the owner, author, or who made the bot, reply exactly: ${BOT_OWNER_REPLY}`,
     `If the user asks about the license, reply exactly with: ${getLicenseReply()}`,
@@ -504,7 +504,7 @@ function buildChatMessages(client, context, message, personality, language) {
       "If the user asks for bot actions, answer briefly and ask them to confirm command intent naturally.",
       `If the user asks about the creator, reply exactly: ${BOT_CREATOR_REPLY}`,
       `If the user asks about the developer, reply exactly: ${BOT_DEVELOPER_REPLY}`,
-      `If the user asks about the organization behind the bot or OpenAI, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
+      `If the user asks about the organization behind the bot or Qwen, reply exactly: ${BOT_ORGANIZATION_REPLY}`,
       `If the user asks about the maintainer, reply exactly: ${BOT_MAINTAINER_REPLY}`,
       `If the user asks about the owner, author, or who made the bot, reply exactly: ${BOT_OWNER_REPLY}`,
       `If the user asks about the license, reply exactly with: ${LICENSE_TEXT}`,
@@ -805,7 +805,7 @@ function normalizeInputMessages(input) {
 async function callGroq(input, apiKey, model) {
   const messages = normalizeInputMessages(input);
   const isChat = Array.isArray(input);
-  const candidate = String(model || "").trim() || "openai/gpt-oss-20b";
+  const candidate = String(model || "").trim() || "qwen/qwen3-32b";
   console.log(`🤖 [AI] request start model=${candidate} mode=${isChat ? "chat" : "router"}`);
   return runGroqChat({
     apiKey,

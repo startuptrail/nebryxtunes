@@ -36,7 +36,7 @@ module.exports = {
     if (client.startPresenceRotation) client.startPresenceRotation();
     client.riffy.init(client.user.id);
 
-    const aiModel = String(config.ai?.model || "openai/gpt-oss-20b");
+    const aiModel = String(config.ai?.model || "qwen/qwen3-32b");
     const aiKey = String(config.ai?.apiKey || "").trim();
     const hasKey = !!aiKey && !/^(?:PASTE_|your[-_ ]?groq|your_key)/i.test(aiKey);
     console.log(`[AI] provider=groq model=${aiModel} key=${hasKey ? "set" : "missing"}`);

@@ -25,7 +25,7 @@ function getAiConfig() {
   return {
     provider: "groq",
     apiKey: cfg.apiKey || "",
-    model: cfg.model || "openai/gpt-oss-20b"
+    model: cfg.model || "qwen/qwen3-32b"
   };
 }
 

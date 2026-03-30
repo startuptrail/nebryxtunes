@@ -36,7 +36,7 @@ function extractText(value) {
   return "";
 }
 
-async function runGroqChat({ apiKey, model = "openai/gpt-oss-20b", messages }) {
+async function runGroqChat({ apiKey, model = "qwen/qwen3-32b", messages }) {
   const trimmedKey = validateApiKey(apiKey);
   if (!Array.isArray(messages) || !messages.length) throw new Error("messages must be a non-empty array.");
 

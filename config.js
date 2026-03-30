@@ -15,7 +15,7 @@ module.exports = {
     apiKey: String(process.env.RENDER || "").toLowerCase() === "true"
       ? (process.env.GROQ_API_KEY || "")
       : "",
-    model: process.env.GROQ_MODEL || "openai/gpt-oss-20b"
+    model: process.env.GROQ_MODEL || "qwen/qwen3-32b"
   },
   websiteUrl: process.env.WEBSITE_URL || "https://nebryxtunes.ibot.qzz.io",
   supportUrl: process.env.SUPPORT_URL || "https://dsc.gg/sparecloud",
