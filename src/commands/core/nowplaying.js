@@ -11,6 +11,7 @@ async function run(client, context) {
   const playerCheck = requirePlayer(client, context.guildId);
   if (!playerCheck.ok) return context.reply(playerCheck.message);
   const player = playerCheck.player;
+  if (!player.playing && !player.paused) return context.reply("Nothing playing.");
   const track = player.current;
   if (!track) return context.reply("Nothing playing.");
   const title = track.info?.title || "Unknown";

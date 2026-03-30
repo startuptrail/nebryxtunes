@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, sendNowPlayingMessage, startPlaybackAndWait } = require("../../lib/playerHelpers");
 
 function parseQuery(input) {
   const value = String(input || "").trim();
@@ -38,23 +38,6 @@ async function ensureConnectedPlayer(player, voiceChannelId, guildId) {
     await new Promise(r => setTimeout(r, 100));
   }
   return !!player.connected;
-}
-
-async function startPlayback(player) {
-  if (!player) return false;
-  try {
-    const r = player.play();
-    if (r && typeof r.then === "function") await r;
-  } catch (e) {
-    console.error("[PLAY] play() threw:", e?.message || e);
-    return false;
-  }
-  const endAt = Date.now() + 3000;
-  while (Date.now() < endAt) {
-    if (player.playing) return true;
-    await new Promise(r => setTimeout(r, 120));
-  }
-  return !!player.playing;
 }
 
 async function run(client, context) {
@@ -100,8 +83,9 @@ async function run(client, context) {
     if (!player.playing && !player.paused) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
       if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
-      const started = await startPlayback(player);
-      if (!started) return context.reply("⚠️ Playback failed to start. Try `skip` or `play` again.");
+      const started = await startPlaybackAndWait(client, player, 9000);
+      if (!started.ok) return context.reply(`⚠️ Playback failed to start (${started.reason}). Try \`play <song>\` again.`);
+      await sendNowPlayingMessage(client, player);
     }
     return;
   }
@@ -115,8 +99,32 @@ async function run(client, context) {
     if (!player.playing && !player.paused) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
       if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
-      const started = await startPlayback(player);
-      if (!started) return context.reply("⚠️ Playback failed to start. Try `skip` or `play` again.");
+      const started = await startPlaybackAndWait(client, player, 9000);
+      if (!started.ok) {
+        // Automatic fallback: retry same query on an alternate source when initial stream fails.
+        if (!isUrl) {
+          const alternates = ["ytsearch", "ytmsearch", "scsearch"].filter(s => s !== (source || "ytmsearch"));
+          for (const alt of alternates) {
+            try {
+              const retryResolve = await client.riffy.resolve({ query, source: alt, requester });
+              const retryTrack = retryResolve?.tracks?.[0];
+              if (!retryTrack) continue;
+              if (typeof player.queue?.clear === "function") player.queue.clear();
+              player.stop();
+              if (retryTrack.info) retryTrack.info.requester = requester;
+              player.queue.add(retryTrack);
+              const retried = await startPlaybackAndWait(client, player, 9000);
+              if (retried.ok) {
+                await context.reply(`✅ Recovered playback using **${alt}**.`);
+                await sendNowPlayingMessage(client, player);
+                return;
+              }
+            } catch (_) {}
+          }
+        }
+        return context.reply(`⚠️ Playback failed to start (${started.reason}). Try another song/link.`);
+      }
+      await sendNowPlayingMessage(client, player);
     }
     return;
   }

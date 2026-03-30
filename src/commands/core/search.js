@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, sendNowPlayingMessage, startPlaybackAndWait } = require("../../lib/playerHelpers");
 
 const SEARCH_PICK_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -46,15 +46,6 @@ async function waitForPlayerConnection(player, timeoutMs = 3000) {
   return !!player?.connected;
 }
 
-async function waitForPlaybackStart(player, timeoutMs = 3000) {
-  const endAt = Date.now() + timeoutMs;
-  while (Date.now() < endAt) {
-    if (player?.playing) return true;
-    await new Promise(resolve => setTimeout(resolve, 120));
-  }
-  return !!player?.playing;
-}
-
 async function tryHandleSelectionMessage(client, message) {
   if (!message?.guild || !message?.author || message.author.bot) return false;
   const guildId = message.guild.id;
@@ -99,13 +90,13 @@ async function tryHandleSelectionMessage(client, message) {
       return true;
     }
     try {
-      const result = player.play();
-      if (result && typeof result.then === "function") {
-        await result;
+      const started = await startPlaybackAndWait(client, player, 9000);
+      if (!started.ok) {
+        await message.reply(`Track added but playback did not start (${started.reason}). Try \`!play <song>\` once.`).catch(() => {});
+      } else {
+        await sendNowPlayingMessage(client, player);
       }
-    } catch {}
-    const started = await waitForPlaybackStart(player, 2800);
-    if (!started) {
+    } catch {
       await message.reply("Track added but playback did not start. Try `!play <song>` once.").catch(() => {});
     }
   }

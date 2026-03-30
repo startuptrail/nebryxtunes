@@ -6,6 +6,10 @@ function getPrefix(client, guildId) {
   return (client.guildPrefixes && client.guildPrefixes.get(guildId)) || config.prefix;
 }
 
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId, deaf = true) {
   const safeConnect = (targetPlayer) => {
     if (!targetPlayer || typeof targetPlayer.connect !== "function") return;
@@ -214,6 +218,60 @@ async function clearNowPlayingMessage(client, player) {
   client.nowPlayingMessages?.delete(player.guildId);
 }
 
+async function awaitPlaybackStart(client, player, timeoutMs = 8000) {
+  if (!client?.riffy || !player?.guildId) return { ok: !!player?.playing, reason: "invalid_state" };
+  const guildId = player.guildId;
+  let timer = null;
+  let settled = false;
+
+  return new Promise((resolve) => {
+    const finish = (ok, reason) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      client.riffy.off("trackStart", onTrackStart);
+      client.riffy.off("trackError", onTrackError);
+      client.riffy.off("trackStuck", onTrackStuck);
+      client.riffy.off("queueEnd", onQueueEnd);
+      resolve({ ok, reason });
+    };
+
+    const isSameGuild = (p) => p?.guildId === guildId;
+    const onTrackStart = (p) => { if (isSameGuild(p)) finish(true, "trackStart"); };
+    const onTrackError = (p, _track, payload) => {
+      if (!isSameGuild(p)) return;
+      const msg = String(payload?.exception?.message || payload?.error || payload?.cause || "trackError");
+      finish(false, msg.slice(0, 200));
+    };
+    const onTrackStuck = (p) => { if (isSameGuild(p)) finish(false, "trackStuck"); };
+    const onQueueEnd = (p) => { if (isSameGuild(p)) finish(false, "queueEnd"); };
+
+    client.riffy.on("trackStart", onTrackStart);
+    client.riffy.on("trackError", onTrackError);
+    client.riffy.on("trackStuck", onTrackStuck);
+    client.riffy.on("queueEnd", onQueueEnd);
+
+    timer = setTimeout(async () => {
+      // Final fallback check in case event was missed but playback actually started.
+      for (let i = 0; i < 8; i++) {
+        if (player.playing && (player.position > 0 || player.paused)) return finish(true, "state");
+        await wait(120);
+      }
+      finish(false, "start_timeout");
+    }, Math.max(1500, timeoutMs));
+  });
+}
+
+async function startPlaybackAndWait(client, player, timeoutMs = 8000) {
+  try {
+    const maybePromise = player.play();
+    if (maybePromise && typeof maybePromise.then === "function") await maybePromise;
+  } catch (error) {
+    return { ok: false, reason: String(error?.message || "play_failed").slice(0, 200) };
+  }
+  return await awaitPlaybackStart(client, player, timeoutMs);
+}
+
 module.exports = {
   getPrefix,
   getOrCreatePlayer,
@@ -223,5 +281,7 @@ module.exports = {
   buildNowPlayingPayload,
   sendNowPlayingMessage,
   updateNowPlayingMessage,
-  clearNowPlayingMessage
+  clearNowPlayingMessage,
+  awaitPlaybackStart,
+  startPlaybackAndWait
 };

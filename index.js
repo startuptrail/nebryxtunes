@@ -343,6 +343,26 @@ async function enterIdleState(player, delayMs = 500, trigger = "manual") {
   }, delayMs);
 }
 
+async function handleTrackFailure(player, payload, kind = "error") {
+  if (!player) return;
+  const textChannelId = client.lastCommandChannel?.get(player.guildId) || player.textChannel;
+  const textChannel = textChannelId ? client.channels.cache.get(textChannelId) : null;
+  const reason = String(payload?.exception?.message || payload?.error || payload?.cause || payload?.reason || kind).slice(0, 180);
+  if (textChannel?.send) {
+    await textChannel.send(`⚠️ Playback ${kind}. ${reason}`).catch(() => {});
+  }
+
+  // Riffy stops on trackError/trackStuck and does not auto-advance; move to next track if available.
+  if (getQueueSize(player) > 0) {
+    const started = await startPlayerPlayback(player);
+    if (started) {
+      await sendNowPlayingMessage(client, player);
+      return;
+    }
+  }
+  enterIdleState(player, 0, "auto");
+}
+
 function printBanner() {
   const version = pkg.version || "1";
   const botName = getBotName();
@@ -437,8 +457,12 @@ client.riffy.on("trackEnd", (player, track) => {
 client.riffy.on("queueEnd", (player) => enterIdleState(player, 200, "auto"));
 client.riffy.on("playerDestroy", (player) => enterIdleState(player, 0));
 client.riffy.on("playerDisconnect", (player) => enterIdleState(player, 0));
-client.riffy.on("trackError", (player) => enterIdleState(player, 0));
-client.riffy.on("trackStuck", (player) => enterIdleState(player, 0));
+client.riffy.on("trackError", (player, _track, payload) => {
+  handleTrackFailure(player, payload, "error").catch(() => {});
+});
+client.riffy.on("trackStuck", (player, _track, payload) => {
+  handleTrackFailure(player, payload, "stuck").catch(() => {});
+});
 
 init();
 module.exports = client;
