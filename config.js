@@ -30,9 +30,9 @@ module.exports = {
     }
   },
   lavalink: {
-    host: process.env.LAVALINK_HOST || "sg2-nodelink.nyxbot.app",
-    port: Number(process.env.LAVALINK_PORT || 3000),
-    password: process.env.LAVALINK_PASSWORD || "nyxbot.app/support",
+    host: process.env.LAVALINK_HOST || "89.106.84.59",
+    port: Number(process.env.LAVALINK_PORT || 4000),
+    password: process.env.LAVALINK_PASSWORD || "heavencloud.in",
     secure: false
   }
 };
