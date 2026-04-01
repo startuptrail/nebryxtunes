@@ -90,7 +90,7 @@ client.riffy = new Riffy(client, nodes, {
     const guild = guildId ? client.guilds.cache.get(guildId) : null;
     if (guild) return guild.shard.send(payload);
   },
-  defaultSearchPlatform: "ytmsearch",
+  defaultSearchPlatform: "ytsearch",
   restVersion: "v4"
 });
 
@@ -252,7 +252,7 @@ async function tryTwentyFourSevenAutoplay(player, settings) {
   if (!queries.length) return false;
 
   for (const query of queries) {
-    for (const source of ["ytmsearch", "ytsearch"]) {
+    for (const source of ["ytsearch", "ytmsearch"]) {
       try {
         const resolve = await client.riffy.resolve({ query, source, requester: client.user });
         const tracks = Array.isArray(resolve?.tracks) ? resolve.tracks : [];

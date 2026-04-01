@@ -17,7 +17,7 @@ function parseQuery(input) {
     };
   }
 
-  return { query: value, source: "ytmsearch", isUrl: false };
+  return { query: value, source: "ytsearch", isUrl: false };
 }
 
 function isNodeUnavailableError(error) {
@@ -38,6 +38,34 @@ async function ensureConnectedPlayer(player, voiceChannelId, guildId) {
     await new Promise(r => setTimeout(r, 100));
   }
   return !!player.connected;
+}
+
+function getAlternateSources(source) {
+  const preferred = source || "ytsearch";
+  return ["ytsearch", "ytmsearch", "scsearch"].filter((item, index, list) => item && item !== preferred && list.indexOf(item) === index);
+}
+
+async function resolveWithFallbacks(client, query, source, requester, isUrl = false) {
+  const attempts = [source || undefined, ...(!isUrl ? getAlternateSources(source) : [])];
+  let lastError = null;
+
+  for (const currentSource of attempts) {
+    try {
+      const resolved = await client.riffy.resolve({ query, source: currentSource, requester });
+      const tracks = Array.isArray(resolved?.tracks) ? resolved.tracks : [];
+      console.log(`[PLAY] loadType=${resolved?.loadType} tracks=${tracks.length} query="${query}" source=${currentSource || "default"}`);
+      if (tracks.length || isUrl) {
+        return { resolved, sourceUsed: currentSource || source || "default" };
+      }
+    } catch (error) {
+      lastError = error;
+      console.error(`[PLAY] resolve error (${currentSource || "default"}):`, error?.message || error);
+      if (isNodeUnavailableError(error)) throw error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  return { resolved: { loadType: "empty", tracks: [] }, sourceUsed: source || "default" };
 }
 
 async function run(client, context) {
@@ -64,20 +92,14 @@ async function run(client, context) {
   const requester = context.interaction?.user ?? context.message?.author;
 
   let resolve;
+  let sourceUsed = source || "ytsearch";
   try {
-    resolve = await client.riffy.resolve({ query, source: source || undefined, requester });
-    console.log(`[PLAY] loadType=${resolve.loadType} tracks=${resolve.tracks?.length} query="${query}" source=${source || "ytmsearch"}`);
+    const result = await resolveWithFallbacks(client, query, source, requester, isUrl);
+    resolve = result.resolved;
+    sourceUsed = result.sourceUsed;
   } catch (err) {
-    console.error("[PLAY] resolve error:", err?.message || err);
     if (isNodeUnavailableError(err)) return context.reply("❌ Lavalink not ready. Try again in a moment.");
-    if (isUrl) return context.reply("❌ Failed to load that URL.");
-    const altSource = source === "ytmsearch" ? "ytsearch" : "ytmsearch";
-    try {
-      resolve = await client.riffy.resolve({ query, source: altSource, requester });
-    } catch (err2) {
-      if (isNodeUnavailableError(err2)) return context.reply("❌ Lavalink not ready. Try again in a moment.");
-      return context.reply("❌ Search failed. Try again.");
-    }
+    return context.reply(isUrl ? "❌ Failed to load that URL." : "❌ Search failed. Try again.");
   }
 
   const { loadType, tracks, playlistInfo } = resolve;
@@ -112,7 +134,7 @@ async function run(client, context) {
       if (!started.ok) {
         // Automatic fallback: retry same query on an alternate source when initial stream fails.
         if (!isUrl) {
-          const alternates = ["ytsearch", "ytmsearch", "scsearch"].filter(s => s !== (source || "ytmsearch"));
+          const alternates = getAlternateSources(sourceUsed);
           for (const alt of alternates) {
             try {
               const retryResolve = await client.riffy.resolve({ query, source: alt, requester });

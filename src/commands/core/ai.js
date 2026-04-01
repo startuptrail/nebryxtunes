@@ -126,11 +126,11 @@ const LICENSE_TEXT = [
   "SOFTWARE."
 ].join("\n");
 
-const BOT_OWNER_REPLY = "This bot is owned by Notflexxy#0000, and the provider, developer, and maintainer is StartupGaming.";
-const BOT_CREATOR_REPLY = "This bot was created by StartupGaming.";
-const BOT_DEVELOPER_REPLY = "This bot is developed and improved by StartupGaming.";
-const BOT_MAINTAINER_REPLY = "This bot is maintained by StartupGaming.";
-const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI stack is Qwen via Groq, while the bot itself is owned by Notflexxy#0000, and bot provider owner, developer, and maintainer is StartupGaming.";
+const BOT_OWNER_REPLY = "This bot is owned by <@1060921330159059034>, and the provider, developer, and maintainer is <@1234512256344002650>.";
+const BOT_CREATOR_REPLY = "This bot was created by <@1234512256344002650>.";
+const BOT_DEVELOPER_REPLY = "This bot is developed and improved by <@1234512256344002650>.";
+const BOT_MAINTAINER_REPLY = "This bot is maintained by <@1234512256344002650>.";
+const BOT_ORGANIZATION_REPLY = "The organization behind this bot's AI stack is Qwen via Groq, while the bot itself is owned by <@1060921330159059034>, and bot provider owner, developer, and maintainer is <@1234512256344002650>.";
 
 const ATTRIBUTION_PATTERNS = [
   {
