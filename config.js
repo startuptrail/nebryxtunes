@@ -30,9 +30,9 @@ module.exports = {
     }
   },
   lavalink: {
-    host: process.env.LAVALINK_HOST || "89.106.84.59",
-    port: Number(process.env.LAVALINK_PORT || 4000),
-    password: process.env.LAVALINK_PASSWORD || "heavencloud.in",
+    host: process.env.LAVALINK_HOST || "lavalink.jirayu.net",
+    port: Number(process.env.LAVALINK_PORT || 13592),
+    password: process.env.LAVALINK_PASSWORD || "youshallnotpass",
     secure: false
   }
 };
