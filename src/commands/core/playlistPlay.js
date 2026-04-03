@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice, sendNowPlayingMessage, startPlaybackAndWait } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
 const Playlist = require("../../database/models/Playlist");
 
 async function waitForPlayerConnection(player, timeoutMs = 3500) {
@@ -31,14 +31,13 @@ async function run(client, context) {
       added++;
     }
   }
-  if (!player.playing && !player.paused) {
+  if (shouldAttemptPlayback(player)) {
     await waitForPlayerConnection(player, 3500);
     const started = await startPlaybackAndWait(client, player, 9000);
     if (!started.ok) {
       await context.reply(`⚠️ Added tracks but playback did not start (${started.reason}).`);
       return;
     }
-    await sendNowPlayingMessage(client, player);
   }
   await context.reply(`Added **${added}** track(s) from **${name}**.`);
 }

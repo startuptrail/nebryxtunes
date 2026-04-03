@@ -30,9 +30,9 @@ module.exports = {
     }
   },
   lavalink: {
-    host: process.env.LAVALINK_HOST || "lavalinkv4.serenetia.com",
-    port: Number(process.env.LAVALINK_PORT || 80),
-    password: process.env.LAVALINK_PASSWORD || "https://seretia.link/discord",
+    host: process.env.LAVALINK_HOST || "lavalink.jirayu.net",
+    port: Number(process.env.LAVALINK_PORT || 13592),
+    password: process.env.LAVALINK_PASSWORD || "youshallnotpass",
     secure: false
   }
 };

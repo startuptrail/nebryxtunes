@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice, sendNowPlayingMessage, startPlaybackAndWait } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
 
 const SEARCH_PICK_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -82,7 +82,7 @@ async function tryHandleSelectionMessage(client, message) {
   player.queue.add(selected);
   const title = selected.info?.title || "Track";
   await message.reply(`Added **${title}**.`).catch(() => {});
-  if (!player.playing && !player.paused) {
+  if (shouldAttemptPlayback(player)) {
     const connected = await waitForPlayerConnection(player, 3000);
     if (!connected) {
       await message.reply("Track added but voice connection is not ready yet. Try again in 2-3 seconds.").catch(() => {});
@@ -93,8 +93,6 @@ async function tryHandleSelectionMessage(client, message) {
       const started = await startPlaybackAndWait(client, player, 9000);
       if (!started.ok) {
         await message.reply(`Track added but playback did not start (${started.reason}). Try \`!play <song>\` once.`).catch(() => {});
-      } else {
-        await sendNowPlayingMessage(client, player);
       }
     } catch {
       await message.reply("Track added but playback did not start. Try `!play <song>` once.").catch(() => {});

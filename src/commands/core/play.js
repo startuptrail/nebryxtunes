@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice, sendNowPlayingMessage, startPlaybackAndWait } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
 
 function parseQuery(input) {
   const value = String(input || "").trim();
@@ -111,12 +111,11 @@ async function run(client, context) {
     }
     const name = playlistInfo?.name || "Playlist";
     await context.reply(`✅ Added **${tracks.length}** tracks from **${name}**.`);
-    if (!player.playing && !player.paused) {
+    if (shouldAttemptPlayback(player)) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
       if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
       const started = await startPlaybackAndWait(client, player, 9000);
       if (!started.ok) return context.reply(`⚠️ Playback failed to start (${started.reason}). Try \`play <song>\` again.`);
-      await sendNowPlayingMessage(client, player);
     }
     return;
   }
@@ -127,7 +126,7 @@ async function run(client, context) {
     player.queue.add(track);
     const title = track.info?.title || "Track";
     await context.reply(`✅ Added **${title}**.`);
-    if (!player.playing && !player.paused) {
+    if (shouldAttemptPlayback(player)) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
       if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
       const started = await startPlaybackAndWait(client, player, 9000);
@@ -147,7 +146,6 @@ async function run(client, context) {
               const retried = await startPlaybackAndWait(client, player, 9000);
               if (retried.ok) {
                 await context.reply(`✅ Recovered playback using **${alt}**.`);
-                await sendNowPlayingMessage(client, player);
                 return;
               }
             } catch (_) {}
@@ -155,7 +153,6 @@ async function run(client, context) {
         }
         return context.reply(`⚠️ Playback failed to start (${started.reason}). Try another song/link.`);
       }
-      await sendNowPlayingMessage(client, player);
     }
     return;
   }

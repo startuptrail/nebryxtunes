@@ -357,7 +357,6 @@ async function handleTrackFailure(player, payload, kind = "error") {
   if (getQueueSize(player) > 0) {
     const started = await startPlayerPlayback(player);
     if (started) {
-      await sendNowPlayingMessage(client, player);
       return;
     }
   }

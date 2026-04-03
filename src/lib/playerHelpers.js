@@ -263,7 +263,28 @@ async function awaitPlaybackStart(client, player, timeoutMs = 8000) {
   });
 }
 
+function shouldAttemptPlayback(player) {
+  if (!player) return false;
+  if (player.paused) return true;
+  if (!player.current) return true;
+  return !player.playing;
+}
+
+async function recoverPlaybackState(player) {
+  if (!player) return;
+  if (player.paused && typeof player.pause === "function") {
+    try { await player.pause(false); } catch (_) {}
+  }
+  const currentVolume = typeof player.volume === "number" ? player.volume : 100;
+  if ((player.muted === true || currentVolume === 0) && typeof player.setVolume === "function") {
+    const restore = typeof player._prevVolume === "number" && player._prevVolume > 0 ? player._prevVolume : 100;
+    try { player.setVolume(restore); } catch (_) {}
+    player.muted = false;
+  }
+}
+
 async function startPlaybackAndWait(client, player, timeoutMs = 8000) {
+  await recoverPlaybackState(player);
   try {
     const maybePromise = player.play();
     if (maybePromise && typeof maybePromise.then === "function") await maybePromise;
@@ -284,5 +305,7 @@ module.exports = {
   updateNowPlayingMessage,
   clearNowPlayingMessage,
   awaitPlaybackStart,
-  startPlaybackAndWait
+  startPlaybackAndWait,
+  shouldAttemptPlayback,
+  recoverPlaybackState
 };
