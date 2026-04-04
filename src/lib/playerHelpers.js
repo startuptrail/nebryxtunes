@@ -299,6 +299,12 @@ async function waitForVoiceConnectionReady(player, timeoutMs = 8000) {
               : connection?.establishing
                 ? "voice_not_confirmed"
                 : "voice_not_ready";
+  console.warn(
+    `[VOICE READY TIMEOUT] guild=${player.guildId} reason=${reason} connected=${!!player.connected} ` +
+    `voiceChannel=${player.voiceChannel || "none"} sessionId=${connection?.voice?.sessionId ? "yes" : "no"} ` +
+    `endpoint=${connection?.voice?.endpoint ? "yes" : "no"} token=${connection?.voice?.token ? "yes" : "no"} ` +
+    `pendingUpdate=${connection?.pendingUpdate ? "yes" : "no"} establishing=${connection?.establishing ? "yes" : "no"}`
+  );
   return { ok: false, reason };
 }
 

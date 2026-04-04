@@ -26,13 +26,12 @@ function isNodeUnavailableError(error) {
 }
 
 async function ensureConnectedPlayer(player, voiceChannelId, guildId) {
-  if (!player) return false;
+  if (!player) return { ok: false, reason: "invalid_player" };
   if (typeof player.connect === "function") {
     try { await player.connect({ guildId, voiceChannel: voiceChannelId, deaf: true, mute: false }); }
     catch (_) {}
   }
-  const ready = await waitForVoiceConnectionReady(player, 5000);
-  return ready.ok;
+  return await waitForVoiceConnectionReady(player, 5000);
 }
 
 function getAlternateSources(source) {
@@ -108,7 +107,7 @@ async function run(client, context) {
     await context.reply(`✅ Added **${tracks.length}** tracks from **${name}**.`);
     if (shouldAttemptPlayback(player)) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
-      if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
+      if (!connected.ok) return context.reply(`⚠️ Voice connection not ready (${connected.reason}).`);
       const started = await startPlaybackAndWait(client, player, 9000);
       if (!started.ok) return context.reply(`⚠️ Playback failed to start (${started.reason}). Try \`play <song>\` again.`);
     }
@@ -123,7 +122,7 @@ async function run(client, context) {
     await context.reply(`✅ Added **${title}**.`);
     if (shouldAttemptPlayback(player)) {
       const connected = await ensureConnectedPlayer(player, voice.voiceChannelId, context.guildId);
-      if (!connected) return context.reply("⚠️ Voice connection not ready. Try again in 2-3 seconds.");
+      if (!connected.ok) return context.reply(`⚠️ Voice connection not ready (${connected.reason}).`);
       const started = await startPlaybackAndWait(client, player, 9000);
       if (!started.ok) {
         // Automatic fallback: retry same query on an alternate source when initial stream fails.
