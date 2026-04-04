@@ -1,14 +1,5 @@
-const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback, waitForVoiceConnectionReady } = require("../../lib/playerHelpers");
 const Playlist = require("../../database/models/Playlist");
-
-async function waitForPlayerConnection(player, timeoutMs = 3500) {
-  const endAt = Date.now() + timeoutMs;
-  while (Date.now() < endAt) {
-    if (player?.connected) return true;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  return !!player?.connected;
-}
 
 async function run(client, context) {
   const voice = requireVoice(context);
@@ -32,7 +23,11 @@ async function run(client, context) {
     }
   }
   if (shouldAttemptPlayback(player)) {
-    await waitForPlayerConnection(player, 3500);
+    const connected = await waitForVoiceConnectionReady(player, 5000);
+    if (!connected.ok) {
+      await context.reply(`⚠️ Added tracks but voice connection is not ready (${connected.reason}).`);
+      return;
+    }
     const started = await startPlaybackAndWait(client, player, 9000);
     if (!started.ok) {
       await context.reply(`⚠️ Added tracks but playback did not start (${started.reason}).`);

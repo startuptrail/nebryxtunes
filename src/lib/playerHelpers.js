@@ -10,6 +10,19 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function hasUsableVoiceConnection(player) {
+  if (!player) return false;
+  const connection = player.connection;
+  if (!connection) return !!player.connected;
+  return !!(
+    player.connected
+    && connection.isReady
+    && !connection.pendingUpdate
+    && !connection.establishing
+    && player.voiceChannel
+  );
+}
+
 function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId, deaf = true) {
   const safeConnect = (targetPlayer) => {
     if (!targetPlayer || typeof targetPlayer.connect !== "function") return;
@@ -263,6 +276,32 @@ async function awaitPlaybackStart(client, player, timeoutMs = 8000) {
   });
 }
 
+async function waitForVoiceConnectionReady(player, timeoutMs = 8000) {
+  if (!player) return { ok: false, reason: "invalid_player" };
+  const endAt = Date.now() + Math.max(1000, timeoutMs);
+  while (Date.now() < endAt) {
+    if (hasUsableVoiceConnection(player)) return { ok: true, reason: "ready" };
+    await wait(100);
+  }
+  const connection = player.connection;
+  const reason = !player.voiceChannel
+    ? "missing_voice_channel"
+    : !player.connected
+      ? "player_not_connected"
+      : !connection?.voice?.sessionId
+        ? "missing_session_id"
+        : !connection?.voice?.endpoint
+          ? "missing_endpoint"
+          : !connection?.voice?.token
+            ? "missing_token"
+            : connection?.pendingUpdate
+              ? "voice_update_pending"
+              : connection?.establishing
+                ? "voice_not_confirmed"
+                : "voice_not_ready";
+  return { ok: false, reason };
+}
+
 function shouldAttemptPlayback(player) {
   if (!player) return false;
   if (player.paused) return true;
@@ -284,6 +323,8 @@ async function recoverPlaybackState(player) {
 }
 
 async function startPlaybackAndWait(client, player, timeoutMs = 8000) {
+  const connection = await waitForVoiceConnectionReady(player, Math.min(timeoutMs, 8000));
+  if (!connection.ok) return connection;
   await recoverPlaybackState(player);
   try {
     const maybePromise = player.play();
@@ -305,7 +346,9 @@ module.exports = {
   updateNowPlayingMessage,
   clearNowPlayingMessage,
   awaitPlaybackStart,
+  waitForVoiceConnectionReady,
   startPlaybackAndWait,
   shouldAttemptPlayback,
-  recoverPlaybackState
+  recoverPlaybackState,
+  hasUsableVoiceConnection
 };

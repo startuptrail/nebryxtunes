@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback, waitForVoiceConnectionReady } = require("../../lib/playerHelpers");
 
 function parseQuery(input) {
   const value = String(input || "").trim();
@@ -27,17 +27,12 @@ function isNodeUnavailableError(error) {
 
 async function ensureConnectedPlayer(player, voiceChannelId, guildId) {
   if (!player) return false;
-  if (player.connected) return true;
   if (typeof player.connect === "function") {
     try { await player.connect({ guildId, voiceChannel: voiceChannelId, deaf: true, mute: false }); }
     catch (_) {}
   }
-  const endAt = Date.now() + 3500;
-  while (Date.now() < endAt) {
-    if (player.connected) return true;
-    await new Promise(r => setTimeout(r, 100));
-  }
-  return !!player.connected;
+  const ready = await waitForVoiceConnectionReady(player, 5000);
+  return ready.ok;
 }
 
 function getAlternateSources(source) {

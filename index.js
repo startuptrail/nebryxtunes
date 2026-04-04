@@ -4,7 +4,7 @@ const { Client, GatewayIntentBits, GatewayDispatchEvents, Partials, Collection, 
 const config = require("./config");
 const pkg = require("./package.json");
 const { connect } = require("./src/database/connect");
-const { sendNowPlayingMessage, clearNowPlayingMessage } = require("./src/lib/playerHelpers");
+const { sendNowPlayingMessage, clearNowPlayingMessage, waitForVoiceConnectionReady } = require("./src/lib/playerHelpers");
 const Guild = require("./src/database/models/Guild");
 const { pickTrackByHype } = require("./src/lib/hypeService");
 const { startDashboardServer } = require("./src/dashboard/server");
@@ -209,7 +209,6 @@ function buildRelatedSearchQueries(track) {
 
 async function ensurePlayerConnected(player) {
   if (!player) return false;
-  if (player.connected) return true;
   if (typeof player.connect === "function") {
     try {
       await player.connect({
@@ -220,12 +219,8 @@ async function ensurePlayerConnected(player) {
       });
     } catch (_) {}
   }
-  const endAt = Date.now() + 3500;
-  while (Date.now() < endAt) {
-    if (player.connected) return true;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  return !!player.connected;
+  const ready = await waitForVoiceConnectionReady(player, 5000);
+  return ready.ok;
 }
 
 async function startPlayerPlayback(player) {

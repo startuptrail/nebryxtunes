@@ -1,4 +1,4 @@
-const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback } = require("../../lib/playerHelpers");
+const { getOrCreatePlayer, requireVoice, startPlaybackAndWait, shouldAttemptPlayback, waitForVoiceConnectionReady } = require("../../lib/playerHelpers");
 
 const SEARCH_PICK_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -35,15 +35,6 @@ function getSelection(client, guildId, userId) {
 function clearSelection(client, guildId, userId) {
   const store = getSelectionStore(client);
   store.delete(getSelectionKey(guildId, userId));
-}
-
-async function waitForPlayerConnection(player, timeoutMs = 3000) {
-  const endAt = Date.now() + timeoutMs;
-  while (Date.now() < endAt) {
-    if (player?.connected) return true;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  return !!player?.connected;
 }
 
 async function tryHandleSelectionMessage(client, message) {
@@ -83,8 +74,8 @@ async function tryHandleSelectionMessage(client, message) {
   const title = selected.info?.title || "Track";
   await message.reply(`Added **${title}**.`).catch(() => {});
   if (shouldAttemptPlayback(player)) {
-    const connected = await waitForPlayerConnection(player, 3000);
-    if (!connected) {
+    const connected = await waitForVoiceConnectionReady(player, 5000);
+    if (!connected.ok) {
       await message.reply("Track added but voice connection is not ready yet. Try again in 2-3 seconds.").catch(() => {});
       clearSelection(client, guildId, userId);
       return true;
