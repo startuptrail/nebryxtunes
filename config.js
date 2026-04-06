@@ -12,9 +12,7 @@ module.exports = {
   mongoUri: process.env.MONGO_URI || process.env.MONGODB_URI || "",
   ai: {
     provider: "groq",
-    apiKey: String(process.env.RENDER || "").toLowerCase() === "true"
-      ? (process.env.GROQ_API_KEY || "")
-      : "",
+    apiKey: process.env.GROQ_API_KEY || "",
     model: process.env.GROQ_MODEL || "qwen/qwen3-32b"
   },
   websiteUrl: process.env.WEBSITE_URL || "https://nebryxtunes.ibot.qzz.io",
