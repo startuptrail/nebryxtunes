@@ -14,6 +14,7 @@ const systemSettingsSchema = new mongoose.Schema({
   maintenance: {
     enabled: { type: Boolean, default: false },
     downtime: { type: String, default: "Unknown" },
+    affectedCommands: { type: [String], default: [] },
     notAffectedCommands: { type: [String], default: [] },
     startedBy: { type: String, default: null },
     startedAt: { type: Date, default: null },

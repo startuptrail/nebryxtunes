@@ -21,6 +21,21 @@ function isBotOwner(context) {
   return getOwnerIds().has(userId);
 }
 
+function getKnownCommandNames(client) {
+  const names = new Set(["maintance", "maintenance"]);
+  const addEntries = (collection) => {
+    if (!collection || typeof collection.keys !== "function") return;
+    for (const key of collection.keys()) {
+      if (key) names.add(String(key).trim().toLowerCase());
+    }
+  };
+
+  addEntries(client?.commands);
+  addEntries(client?.slashCommands);
+
+  return Array.from(names).sort();
+}
+
 async function run(client, context) {
   if (!context?.guildId) return context.reply("Use this in a server.");
   if (!isBotOwner(context)) return context.reply("Only bot owners can use `/maintance`.");
@@ -47,12 +62,16 @@ async function run(client, context) {
   if (sub === "status" || sub === "show") {
     const state = await getMaintenanceState();
     if (!state.enabled) return context.reply("Maintenance mode is currently OFF.");
+    const affected = Array.isArray(state.affectedCommands) && state.affectedCommands.length
+      ? state.affectedCommands.map((cmd) => `\`${cmd}\``).join(", ")
+      : "None";
     const allowed = Array.isArray(state.notAffectedCommands) && state.notAffectedCommands.length
       ? state.notAffectedCommands.map((cmd) => `\`${cmd}\``).join(", ")
       : "None";
     return context.reply([
       "⚠️ Maintenance mode is ON.",
       `⏳ Downtime: ${state.downtime || "Unknown"}`,
+      `⛔ Affected commands: ${affected}`,
       `✅ Not affected commands: ${allowed}`
     ].join("\n"));
   }
@@ -60,24 +79,43 @@ async function run(client, context) {
   if (sub === "start" || sub === "on" || sub === "enable") {
     const rawArgs = Array.isArray(context?.args) ? context.args.slice(1) : [];
     const allowArg = rawArgs.find((item) => String(item).startsWith("--allow="));
-    const downtimeParts = rawArgs.filter((item) => !String(item).startsWith("--allow="));
+    const affectedArg = rawArgs.find((item) => String(item).startsWith("--affected="));
+    const downtimeParts = rawArgs.filter((item) =>
+      !String(item).startsWith("--allow=") && !String(item).startsWith("--affected=")
+    );
     const downtimeRaw = isSlash
       ? String(context?.options?.downtime || "").trim()
       : String(downtimeParts.join(" ") || "").trim();
+    const affectedRaw = isSlash
+      ? String(context?.options?.affected_cmds || "").trim()
+      : String(affectedArg || "").replace(/^--affected=/, "").trim();
     const notAffectedRaw = isSlash
       ? String(context?.options?.not_affected_cmds || "").trim()
       : String(allowArg || "").replace(/^--allow=/, "").trim();
+
+    if (affectedRaw && notAffectedRaw) {
+      return context.reply("Choose either `affected_cmds` or `not_affected_cmds`, not both.");
+    }
 
     const normalizedTime = String(downtimeRaw || "").toLowerCase();
     const downtime = !downtimeRaw || normalizedTime === "forever" || normalizedTime === "unknown"
       ? "Unknown (until /maintance end)"
       : downtimeRaw;
-    const notAffected = normalizeCommandList(notAffectedRaw);
+    const allCommands = getKnownCommandNames(client).filter((name) => name !== "maintance" && name !== "maintenance");
+    const affectedInput = Array.from(new Set(normalizeCommandList(affectedRaw))).filter((name) => allCommands.includes(name));
+    const notAffectedInput = Array.from(new Set(normalizeCommandList(notAffectedRaw))).filter((name) => allCommands.includes(name));
+    const affected = affectedInput.length
+      ? affectedInput
+      : allCommands.filter((name) => !notAffectedInput.includes(name));
+    const notAffected = notAffectedInput.length
+      ? notAffectedInput
+      : allCommands.filter((name) => !affectedInput.includes(name));
 
     const next = {
       enabled: true,
       downtime,
-      notAffectedCommands: Array.from(new Set(notAffected)),
+      affectedCommands: affected,
+      notAffectedCommands: notAffected,
       startedBy: String(context.userId || ""),
       startedAt: new Date(),
       endedBy: null,
@@ -86,9 +124,15 @@ async function run(client, context) {
     await setMaintenanceState(next);
     return context.reply({
       embeds: [buildMaintenanceEmbed(downtime)],
-      content: notAffected.length
-        ? `✅ Maintenance mode started globally.\nNot affected commands: ${notAffected.map((cmd) => `\`${cmd}\``).join(", ")}`
-        : "✅ Maintenance mode started globally.\nNot affected commands: None"
+      content: [
+        "✅ Maintenance mode started globally.",
+        affected.length
+          ? `Affected commands: ${affected.map((cmd) => `\`${cmd}\``).join(", ")}`
+          : "Affected commands: None",
+        notAffected.length
+          ? `Not affected commands: ${notAffected.map((cmd) => `\`${cmd}\``).join(", ")}`
+          : "Not affected commands: None"
+      ].join("\n")
     });
   }
 

@@ -16,6 +16,12 @@ const data = new SlashCommandBuilder()
       )
       .addStringOption((o) =>
         o
+          .setName("affected_cmds")
+          .setDescription("Comma-separated commands blocked during maintenance. Example: play,skip,queue")
+          .setRequired(false)
+      )
+      .addStringOption((o) =>
+        o
           .setName("not_affected_cmds")
           .setDescription("Comma-separated commands allowed during maintenance. Example: help,ping,maintance")
           .setRequired(false)

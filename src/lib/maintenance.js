@@ -23,6 +23,7 @@ function getDefaultState() {
   return {
     enabled: false,
     downtime: "Unknown",
+    affectedCommands: [],
     notAffectedCommands: [],
     startedBy: null,
     startedAt: null,
@@ -65,11 +66,15 @@ function isCommandAllowedDuringMaintenance(commandName, state) {
 function buildMaintenanceNotice(state) {
   const botName = getBotName();
   const downtime = String(state?.downtime || "Unknown");
+  const affected = Array.isArray(state?.affectedCommands) ? state.affectedCommands : [];
   const allowed = Array.isArray(state?.notAffectedCommands) ? state.notAffectedCommands : [];
+  const affectedText = affected.length ? affected.map((cmd) => `\`${cmd}\``).join(", ") : "None";
   const allowedText = allowed.length ? allowed.map((cmd) => `\`${cmd}\``).join(", ") : "None";
+
   return [
     `⚠️ ${botName} is in maintenance mode.`,
     `⏳ Downtime: ${downtime}`,
+    `⛔ Affected commands: ${affectedText}`,
     `✅ Not affected commands: ${allowedText}`,
     "Use `/maintance end` when maintenance is complete."
   ].join("\n");
