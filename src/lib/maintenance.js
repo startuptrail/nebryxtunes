@@ -23,6 +23,7 @@ function getDefaultState() {
   return {
     enabled: false,
     downtime: "Unknown",
+    selectionMode: "none",
     affectedCommands: [],
     notAffectedCommands: [],
     startedBy: null,
@@ -60,16 +61,27 @@ function isCommandAllowedDuringMaintenance(commandName, state) {
   if (!state?.enabled) return true;
   if (!name) return false;
   if (name === "maintance" || name === "maintenance") return true;
+  const mode = String(state?.selectionMode || "none").toLowerCase();
+  if (mode === "none") return true;
+
   const notAffected = Array.isArray(state?.notAffectedCommands)
     ? state.notAffectedCommands.map((cmd) => normalizeCommandName(cmd)).filter(Boolean)
     : [];
-  if (notAffected.length) return notAffected.includes(name);
-
   const affected = Array.isArray(state?.affectedCommands)
     ? state.affectedCommands.map((cmd) => normalizeCommandName(cmd)).filter(Boolean)
     : [];
-  if (affected.length) return !affected.includes(name);
 
+  if (mode === "not_affected") {
+    if (!notAffected.length) return true;
+    return notAffected.includes(name);
+  }
+
+  if (mode === "affected") {
+    if (!affected.length) return true;
+    return !affected.includes(name);
+  }
+
+  // Unknown legacy mode should never hard-lock the whole bot.
   return true;
 }
 

@@ -106,6 +106,7 @@ async function run(client, context) {
     const notAffectedInput = Array.from(new Set(normalizeCommandList(notAffectedRaw))).filter((name) => allCommands.includes(name));
     const hasAffectedInput = affectedInput.length > 0;
     const hasNotAffectedInput = notAffectedInput.length > 0;
+    const selectionMode = hasAffectedInput ? "affected" : hasNotAffectedInput ? "not_affected" : "none";
     const affected = hasAffectedInput
       ? affectedInput
       : hasNotAffectedInput
@@ -120,6 +121,7 @@ async function run(client, context) {
     const next = {
       enabled: true,
       downtime,
+      selectionMode,
       affectedCommands: affected,
       notAffectedCommands: notAffected,
       startedBy: String(context.userId || ""),
