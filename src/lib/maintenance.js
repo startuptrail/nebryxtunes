@@ -60,7 +60,17 @@ function isCommandAllowedDuringMaintenance(commandName, state) {
   if (!state?.enabled) return true;
   if (!name) return false;
   if (name === "maintance" || name === "maintenance") return true;
-  return Array.isArray(state.notAffectedCommands) && state.notAffectedCommands.includes(name);
+  const notAffected = Array.isArray(state?.notAffectedCommands)
+    ? state.notAffectedCommands.map((cmd) => normalizeCommandName(cmd)).filter(Boolean)
+    : [];
+  if (notAffected.length) return notAffected.includes(name);
+
+  const affected = Array.isArray(state?.affectedCommands)
+    ? state.affectedCommands.map((cmd) => normalizeCommandName(cmd)).filter(Boolean)
+    : [];
+  if (affected.length) return !affected.includes(name);
+
+  return true;
 }
 
 function buildMaintenanceNotice(state) {
