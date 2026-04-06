@@ -3,7 +3,7 @@ const { Player } = require("riffy/build/structures/Player");
 const { Client, GatewayIntentBits, GatewayDispatchEvents, Partials, Collection, ActivityType } = require("discord.js");
 const config = require("./config");
 const pkg = require("./package.json");
-const { connect } = require("./src/database/connect");
+const { connect, isDatabaseReady } = require("./src/database/connect");
 const { sendNowPlayingMessage, clearNowPlayingMessage, waitForVoiceConnectionReady } = require("./src/lib/playerHelpers");
 const Guild = require("./src/database/models/Guild");
 const { pickTrackByHype } = require("./src/lib/hypeService");
@@ -373,6 +373,7 @@ function printBanner() {
 }
 
 async function loadGuildPrefixes() {
+  if (!isDatabaseReady()) return 0;
   const guilds = await Guild.find({}).lean();
   let count = 0;
   for (const g of guilds) {
@@ -387,7 +388,7 @@ async function init() {
   try { client.dashboardServer = await startDashboardServer(client); }
   catch (error) { console.error("[DASHBOARD] Failed to start:", error?.message || error); }
   await connect();
-  const prefixCount = await loadGuildPrefixes();
+  const prefixCount = await loadGuildPrefixes().catch(() => 0);
   console.log(`🟢 [CACHE] Prefixes Loaded (${prefixCount})`);
   console.log("📦 [SYSTEM] Handlers Loading");
   require("./src/handlers/eventHandler")(client);

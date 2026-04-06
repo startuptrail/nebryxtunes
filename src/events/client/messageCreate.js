@@ -6,6 +6,7 @@ const { handleAiModeration } = require('../../lib/moderationHandler');
 const { monitorIncomingMessage } = require('../../lib/securityMonitor');
 const { getMaintenanceState, isCommandAllowedDuringMaintenance, buildMaintenanceNotice } = require('../../lib/maintenance');
 const { getGlobalAutoResponses } = require('../../lib/globalAuto');
+const { isDatabaseReady } = require('../../database/connect');
 
 function normalizeAutoText(value) {
     return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
@@ -17,7 +18,9 @@ module.exports = {
   async execute(message, client) {
     if (message.author.bot) return;
     if (!message.guild) return;
-    const guildData = await Guild.findOne({ guildId: message.guild.id }).lean();
+    const guildData = isDatabaseReady()
+      ? await Guild.findOne({ guildId: message.guild.id }).lean().catch(() => null)
+      : null;
     const maintenanceState = await getMaintenanceState();
     await monitorIncomingMessage(message, guildData);
 
