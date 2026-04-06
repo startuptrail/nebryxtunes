@@ -104,12 +104,18 @@ async function run(client, context) {
     const allCommands = getKnownCommandNames(client).filter((name) => name !== "maintance" && name !== "maintenance");
     const affectedInput = Array.from(new Set(normalizeCommandList(affectedRaw))).filter((name) => allCommands.includes(name));
     const notAffectedInput = Array.from(new Set(normalizeCommandList(notAffectedRaw))).filter((name) => allCommands.includes(name));
-    const affected = affectedInput.length
+    const hasAffectedInput = affectedInput.length > 0;
+    const hasNotAffectedInput = notAffectedInput.length > 0;
+    const affected = hasAffectedInput
       ? affectedInput
-      : allCommands.filter((name) => !notAffectedInput.includes(name));
-    const notAffected = notAffectedInput.length
+      : hasNotAffectedInput
+        ? allCommands.filter((name) => !notAffectedInput.includes(name))
+        : [];
+    const notAffected = hasNotAffectedInput
       ? notAffectedInput
-      : allCommands.filter((name) => !affectedInput.includes(name));
+      : hasAffectedInput
+        ? allCommands.filter((name) => !affectedInput.includes(name))
+        : allCommands;
 
     const next = {
       enabled: true,
