@@ -1263,7 +1263,8 @@ async function run(client, context) {
     const nextChannels = targetChannelId ? [targetChannelId] : currentAllowedChannels;
     await Guild.updateOne(
       { guildId: context.guildId },
-      { $set: { aiEnabled: true, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } }
+      { $set: { aiEnabled: true, aiAutoDisabled: false, aiAllowedChannelIds: nextChannels } },
+      { upsert: true }
     );
     clearPendingAction(client, context);
     if (!targetChannelId) return context.reply("AI enabled.");
@@ -1326,7 +1327,8 @@ async function run(client, context) {
     if (!PERSONALITIES.has(mode)) return context.reply("Use: chill | hype | meme");
     await Guild.updateOne(
       { guildId: context.guildId },
-      { $set: { personality: mode } }
+      { $set: { personality: mode } },
+      { upsert: true }
     );
     clearPendingAction(client, context);
     return context.reply(`Personality set to ${mode}.`);
@@ -1337,7 +1339,8 @@ async function run(client, context) {
     const nextLang = lang.slice(0, 32);
     await Guild.updateOne(
       { guildId: context.guildId },
-      { $set: { language: nextLang } }
+      { $set: { language: nextLang } },
+      { upsert: true }
     );
     clearPendingAction(client, context);
     return context.reply(`Language set to ${nextLang}.`);
